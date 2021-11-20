@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 '''
 1. For the 28th Samsung Human Tech
 '''
@@ -17,7 +19,7 @@ class HumanTech():
         self.left_gt, self.right_gt     = self.input.load_gt()
         self.left_mde, self.right_mde   = self.input.load_mde()
 
-    def dos
+    # def dos
 
 if __name__ == '__main__':
     try:
