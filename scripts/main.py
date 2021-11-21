@@ -4,28 +4,32 @@
 1. For the 28th Samsung Human Tech
 '''
 
+import rospy
+
+import numpy as np
+
 from utils_Input import Image_load
 
+'''
+1. MDE's depth data scaling with StereoMatching 
+2. Navigation with depth image
+'''
 class HumanTech():
-    def __init__(self,a):
-        '''
-        class declaration
-        '''
+    def __init__(self):
+        # class declaration
         self.input = Image_load()
 
 
     def input_data(self):
-        self.left_rgb, self.right_rgb   = self.input.load_rgb()
-        self.left_gt, self.right_gt     = self.input.load_gt()
-        self.left_mde, self.right_mde   = self.input.load_mde()
-
-    # def dos
+        # Input image(RGB & Depth)
+        self.left_color, self.right_color     = self.input.ROS_RGB()
+        self.left_depth, self.right_depth     = self.input.ROS_GT()
 
 if __name__ == '__main__':
     try:
-        ht = HumanTech("asdf")
-        ht.input_data()
-        # while True:
+        ht = HumanTech()
+        while True:
+            ht.input_data()
 
         print("")
     finally:
