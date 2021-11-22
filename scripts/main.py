@@ -12,6 +12,8 @@ import numpy as np
 from utils_Input import Image_load
 from utils_Rectification import Rectification
 
+from utils_Link import Link_Adabins
+
 '''
 1. MDE's depth data scaling with StereoMatching 
 2. Navigation with depth image
@@ -21,6 +23,7 @@ class HumanTech():
     def __init__(self):
         self.input = Image_load()
         self.rect = Rectification()
+        self.adabins = Link_Adabins()
 
     # Input image(RGB & GT)
     def input_data(self):
@@ -42,6 +45,7 @@ class HumanTech():
         # RGB와 Depth의 synchronization를 위해 토픽 사용 안함.
         print('Starting rectification computation...')
         st = t.time()
+        self.adabins.
         et = t.time()
         print("\tRectification execution time = {:.5f}s".format(et-st))
 
