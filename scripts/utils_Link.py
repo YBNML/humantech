@@ -15,13 +15,12 @@ class Link_Adabins:
         adabins_path = os.path.abspath(os.path.join(ROS_WS, 'adabins')) + "/scripts"
         sys.path.append(adabins_path) # utils 절대경로를 환경변수에 추가
         from utils_Adabins import Adabins
-        
         self.adabins = Adabins()
-    def predict(self):
+        
+    def predict(self, input_img):
         # Left
-        centers, left_adabins_output = self.adabins.predict_pil(left_adabins_input)
-        self.left_depth = left_adabins_output.squeeze()
-
+        __, adabins_output = self.adabins.predict_pil(input_img)
+        return adabins_output.squeeze()
 
 if __name__=="__main__":
     adabins = Link_Adabins()
