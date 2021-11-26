@@ -9,11 +9,16 @@ import rospy
 import cv2
 import time as t
 import numpy as np
+from skimage.color import rgb2gray
 
+from utils_Parameter import parameter
 from utils_Input import Image_load
 from utils_Rotation import rotate_data          # function
 from utils_Rectification import Rectification
 
+import utils_stereo_matching as sm
+
+# from utils_SuperPixel import SuperPixelSampler
 
 from utils_Link import Link_Adabins
 
@@ -27,14 +32,19 @@ from utils_Display import DISPLAY
 class HumanTech():
     # class declaration
     def __init__(self):
+        # Load init setting data
+        self.param  = parameter()
+        self.D = self.param.get_D()     # Max disparity
+        self.R = self.param.get_R()     # Size of window to consider around the scan line point
+        
         # Load input data from gazabo
         self.input = Image_load()
         # Adabins
         self.adabins = Link_Adabins()
-        # Rotation 
-        # self.rot = Rotation()
         # Rectification
         self.rect = Rectification()
+        # SuperPixel
+        # self.sp = SuperPixelSampler()
 
     # Input image(RGB & GT)
     def input_data(self):
@@ -80,11 +90,18 @@ class HumanTech():
         self.rect_right_RGB = self.rect_right_RGB[40:440,140:500]
         self.rect_left_MDE = self.rect_left_MDE[40:440,140:500]
         self.rect_right_MDE = self.rect_right_MDE[40:440,140:500]
+        
     # Crop for StereoMatching's preprocessing
     def blur(self):
         # Color image blur
         self.rect_left_RGB      = cv2.GaussianBlur(self.rect_left_RGB, (3,3), 0, 0)
         self.rect_right_RGB     = cv2.GaussianBlur(self.rect_right_RGB, (3,3), 0, 0)
+        
+    # Crop for StereoMatching's preprocessing
+    def rgb2gray(self):
+        # convert RGB to Gray for stereo matching
+        self.gray_rect_left_RGB     = rgb2gray(self.rect_left_RGB)
+        self.gray_rect_right_RGB    = rgb2gray(self.rect_right_RGB)
     
     # StereoMatching's preprocessing
     def preprocessing(self):
@@ -92,8 +109,29 @@ class HumanTech():
         st = t.time()
         self.crop()
         self.blur()
+        self.rgb2gray()
         et = t.time()
         print("\tPreprocessing execution time \t\t\t= {:.3f}s".format(et-st))
+        
+    # ZNCC & WTA - StereoMatching
+    def stereomathcing(self):
+        print('Starting ZNCC&WTA computation...')
+        st = t.time()
+        # Adaptive window size
+        G_x = np.array([[-1,0,1]])
+        l_edge = cv2.filter2D(self.gray_rect_left_RGB, cv2.CV_64F, G_x)
+        r_edge = cv2.filter2D(self.gray_rect_right_RGB, cv2.CV_64F, G_x)
+        l_edge = np.abs(l_edge)
+        r_edge = np.abs(r_edge)
+        l_edge_xsum = np.sum(l_edge,axis=1)
+        r_edge_xsum = np.sum(r_edge,axis=1)
+        
+        # Left disparity
+        sm.zncc(self.gray_rect_left_RGB, self.gray_rect_right_RGB, self.D, self.R, l_edge_xsum)
+        # wta_ncc = sm.compute_wta(cv_ncc)
+        
+        et = t.time()
+        print('\tZNCC & WTA execution time \t\t\t= {:.3f}s'.format(et-st))
         
     
     def display(self):
@@ -125,9 +163,10 @@ if __name__ == '__main__':
             ht.input_data()
             ht.MDE()
             ht.rectification()
+            
             ht.preprocessing()
             
-            
+            ht.stereomathcing()
             
             ht.display()
             
