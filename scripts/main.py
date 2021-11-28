@@ -16,6 +16,7 @@ from utils_Input import Image_load
 from utils_Rotation import rotate_data          # function
 from utils_Rectification import Rectification
 
+from utils_ZNCC import zncc
 import utils_stereo_matching as sm
 
 # from utils_SuperPixel import SuperPixelSampler
@@ -127,7 +128,9 @@ class HumanTech():
         r_edge_xsum = np.sum(r_edge,axis=1)
         
         # Left disparity
-        sm.zncc(self.gray_rect_left_RGB, self.gray_rect_right_RGB, self.D, self.R, l_edge_xsum)
+        self.gray_rect_left_RGB = self.gray_rect_left_RGB/255
+        self.gray_rect_right_RGB = self.gray_rect_right_RGB/255
+        result = zncc(self.gray_rect_left_RGB, self.gray_rect_right_RGB, self.D, self.R, l_edge_xsum)
         # wta_ncc = sm.compute_wta(cv_ncc)
         
         et = t.time()
@@ -168,7 +171,7 @@ if __name__ == '__main__':
             
             ht.stereomathcing()
             
-            ht.display()
+            # ht.display()
             
             r.sleep()
 
