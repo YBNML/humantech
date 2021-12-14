@@ -16,10 +16,10 @@ from utils_Input import Image_load
 from utils_Rotation import rotate_data          # function
 from utils_Rectification import Rectification
 
-from utils_ZNCC import zncc_left, zncc_right, compute_wta
+from utils_ZNCC import zncc_left, zncc_right
 import utils_stereo_matching as sm
 
-# from utils_SuperPixel import SuperPixelSampler
+from utils_SuperPixel import SuperPixelSampler
 
 from utils_Link import Link_Adabins
 
@@ -37,6 +37,8 @@ class HumanTech():
         self.param  = parameter()
         self.D = self.param.get_D()     # Max disparity
         self.R = self.param.get_R()     # Size of window to consider around the scan line point
+        self.BL = self.param.get_BL()
+        self.F = self.param.get_f()
         
         # Load input data from gazabo
         self.input = Image_load()
@@ -44,8 +46,9 @@ class HumanTech():
         self.adabins = Link_Adabins()
         # Rectification
         self.rect = Rectification()
+        
         # SuperPixel
-        # self.sp = SuperPixelSampler()
+        self.sp = SuperPixelSampler()
 
     # Input image(RGB & GT)
     def input_data(self):
@@ -126,33 +129,46 @@ class HumanTech():
         r_edge = np.abs(r_edge)
         l_edge_xsum = np.sum(l_edge,axis=1)
         r_edge_xsum = np.sum(r_edge,axis=1)
-        
-        # Left disparity
+        # Disparity
         self.gray_rect_left_RGB = self.gray_rect_left_RGB/255
         self.gray_rect_right_RGB = self.gray_rect_right_RGB/255
-        left_cost   = zncc_left(self.gray_rect_left_RGB, self.gray_rect_right_RGB, self.D, self.R, l_edge_xsum)
-        right_cost  = zncc_right(self.gray_rect_left_RGB, self.gray_rect_right_RGB, self.D, self.R, r_edge_xsum)
-        left_disparity  = compute_wta(left_cost)
-        right_disparity = compute_wta(right_cost)
-        
+        self.left_disparity   = zncc_left(self.gray_rect_left_RGB, self.gray_rect_right_RGB, self.D, self.R, l_edge_xsum)
+        self.right_disparity  = zncc_right(self.gray_rect_left_RGB, self.gray_rect_right_RGB, self.D, self.R, r_edge_xsum)
+        # Depth 
+        self.left_stereo_depth = self.BL*self.F/self.left_disparity
+        self.right_stereo_depth = self.BL*self.F/self.right_disparity
         et = t.time()
         print('\tZNCC & WTA execution time \t\t\t= {:.3f}s'.format(et-st))
+        
+    
+    def superpixel(self):
+        print('Starting SuperPixel computation...')
+        st = t.time()
+        self.sp.superPixel(self.rect_left_RGB, self.left_stereo_depth, self.rect_left_MDE)
+        et = t.time()
+        print('\tSuperPixel execution time \t\t\t= {:.3f}s'.format(et-st))
         
     
     def display(self):
         RGB_viz = np.hstack((self.rect_left_RGB,self.rect_right_RGB))
         cv2.imshow("1. RGB_viz", RGB_viz)
         
-        __, left_depth_viz = DISPLAY(self.left_GT)
-        __, right_depth_viz = DISPLAY(self.right_GT)
-        Depth_viz = np.hstack((left_depth_viz,right_depth_viz))
-        cv2.imshow("1. Depth_viz", Depth_viz)
+        __, left_GT_viz = DISPLAY(self.left_GT)
+        __, right_GT_viz = DISPLAY(self.right_GT)
+        GT_viz = np.hstack((left_GT_viz,right_GT_viz))
+        cv2.imshow("2. Depth_viz", GT_viz)
         
         
-        __, left_mde_viz = DISPLAY(self.left_MDE)
-        __, right_mde_viz = DISPLAY(self.right_MDE)
-        mde_viz = np.hstack((left_mde_viz,right_mde_viz))
-        cv2.imshow("1. MDE_viz", mde_viz)
+        __, left_MDE_viz = DISPLAY(self.left_MDE)
+        __, right_MDE_viz = DISPLAY(self.right_MDE)
+        MDE_viz = np.hstack((left_MDE_viz,right_MDE_viz))
+        cv2.imshow("3. MDE_viz", MDE_viz)
+        
+        
+        __, left_stereo_depth_viz = DISPLAY(self.left_stereo_depth)
+        __, right_stereo_depth_viz = DISPLAY(self.right_stereo_depth)
+        stereo_depth_viz = np.hstack((left_stereo_depth_viz,right_stereo_depth_viz))
+        cv2.imshow("4. SDE_viz", stereo_depth_viz)
         
         cv2.waitKey(10)
 
@@ -172,6 +188,9 @@ if __name__ == '__main__':
             ht.preprocessing()
             
             ht.stereomathcing()
+            
+            
+            ht.superpixel()
             
             ht.display()
             

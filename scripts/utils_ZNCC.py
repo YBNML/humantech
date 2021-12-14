@@ -2,14 +2,13 @@
 
 import numpy as np
 
-from numba import njit, jit, prange
+from numba import njit, prange, jit
 
 
-@jit(nopython = True, parallel = True, cache = True, fastmath=True)
+@njit(nogil=True, parallel = True, fastmath=True)
 def zncc_left(left_image, right_image, D, R, adaptive):
     (H,W)   = left_image.shape
-    cv    = np.ones((D,H,W))*1000
-    # cost  = [1000 for col in range(D)]
+    cv    = np.ones((H,W))*200      # disparity image
     
     # Loop over image
     for y in prange(R, H - R):
@@ -37,14 +36,15 @@ def zncc_left(left_image, right_image, D, R, adaptive):
                     l_dev += (left_image[y+v, x+u] - l_avg)**2
             l_dev = (l_dev**0.5)/(2*tempR+1)
             
+            
+            # # Minimum cost value
+            min_cost = 5000
+            min_disparity = 200
+            
             # Considering disparity range
-            for d in prange(0, D):
+            for d in range(0, D):
                 if x-d-tempR<0:
                     break
-                
-                # # Minimum cost value
-                min_cost = 5000
-                min_cost_disp = -1
                 
                 # right_window's average
                 r_avg = 0  
@@ -60,20 +60,24 @@ def zncc_left(left_image, right_image, D, R, adaptive):
                 r_dev = (r_dev**0.5)/(2*tempR+1)
                 
                 # Store cost
-                sum_arr = 0
+                temp_cost = 0
                 for v in range(-tempR, tempR + 1):
                     for u in range(-tempR, tempR + 1):
-                        sum_arr += (left_image[y+v, x+u] - l_avg)*(right_image[y+v, x+u-d] - r_avg)
+                        temp_cost += (left_image[y+v, x+u] - l_avg)*(right_image[y+v, x+u-d] - r_avg)
                 
-                cv[d,y,x] = sum_arr/(N * l_dev * r_dev)
-    return np.transpose(cv, (1, 2, 0))
+                if temp_cost < min_cost:
+                    min_cost = temp_cost
+                    min_disparity = d
+                    
+            cv[y,x] = min_disparity
+            
+    return cv
     
     
-@njit(nopython = True, parallel = True, cache = True, fastmath=True)
+@njit(nogil=True, parallel = True, fastmath=True)
 def zncc_right(left_image, right_image, D, R, adaptive):
     (H,W)   = right_image.shape
-    cv    = np.ones((D,H,W))*1000
-    # cost  = [1000 for col in range(D)]
+    cv    = np.ones((H,W))*200      # disparity image
     
     # Loop over image
     for y in prange(R, H - R):
@@ -101,15 +105,14 @@ def zncc_right(left_image, right_image, D, R, adaptive):
                     r_dev += (right_image[y+v, x+u] - r_avg)**2
             r_dev = (r_dev**0.5)/(2*tempR+1)
                 
+            # Minimum cost value
+            min_cost = 5000
+            min_disparity = 200
             
             # Considering disparity range
             for d in prange(0, D):
-                if x+d+tempR<0:
+                if x+d+tempR>=640:
                     break
-                
-                # # Minimum cost value
-                min_cost = 5000
-                min_cost_disp = -1
                 
                 # left_window's average
                 l_avg = 0  
@@ -125,15 +128,15 @@ def zncc_right(left_image, right_image, D, R, adaptive):
                 l_dev = (l_dev**0.5)/(2*tempR+1)
                 
                 # Store cost
-                sum_arr = 0
+                temp_cost = 0
                 for v in range(-tempR, tempR + 1):
                     for u in range(-tempR, tempR + 1):
-                        sum_arr += (left_image[y+v, x+u+d] - l_avg)*(right_image[y+v, x+u] - r_avg)
+                        temp_cost += (left_image[y+v, x+u+d] - l_avg)*(right_image[y+v, x+u] - r_avg)
                 
-                cv[d,y,x] = sum_arr/(N * l_dev * r_dev)
+                if temp_cost < min_cost:
+                    min_cost = temp_cost
+                    min_disparity = d
                 
-    return np.transpose(cv, (1, 2, 0))
-
-def compute_wta(cv):
-    assert(cv.ndim == 3)
-    return np.argmin(cv, axis=2)
+            cv[y,x] = min_disparity
+            
+    return cv

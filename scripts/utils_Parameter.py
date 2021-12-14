@@ -20,6 +20,9 @@ class parameter:
 
         # accX tolerance 
         self.X = 3
+        
+        # Base Line
+        self.BL = 0.2
 
         # number of example in the example list
         self.example_number = 1
@@ -53,3 +56,6 @@ class parameter:
 
     def get_X(self):
         return self.X
+    
+    def get_BL(self):
+        return self.BL
