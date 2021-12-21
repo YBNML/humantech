@@ -145,6 +145,8 @@ class HumanTech():
         print('Starting SuperPixel computation...')
         st = t.time()
         self.sp.superPixel(self.rect_left_RGB, self.left_stereo_depth, self.rect_left_MDE)
+        self.sp.superPixel(self.rect_right_RGB, self.right_stereo_depth, self.rect_right_MDE)
+        # self.scaling()
         et = t.time()
         print('\tSuperPixel execution time \t\t\t= {:.3f}s'.format(et-st))
         
@@ -157,7 +159,6 @@ class HumanTech():
         __, right_GT_viz = DISPLAY(self.right_GT)
         GT_viz = np.hstack((left_GT_viz,right_GT_viz))
         cv2.imshow("2. Depth_viz", GT_viz)
-        
         
         __, left_MDE_viz = DISPLAY(self.left_MDE)
         __, right_MDE_viz = DISPLAY(self.right_MDE)

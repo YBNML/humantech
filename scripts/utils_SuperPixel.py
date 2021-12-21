@@ -6,9 +6,12 @@ import statistics
 
 
 from numba import njit, prange, jit
-
-@njit
-def labels_to_xy(labels, num_of_superpixels_result, width, height):
+    
+@njit(nogil=True, fastmath=True)
+def superpixel(labels, num_of_superpixels_result, width, height, Depth_stereo, Depth_pred):
+    '''
+    1. Convert 'labels' to 'x&y coordinate list'
+    '''
     # numba unsupported unknown data type
     x_list = [[np.int64(-1)] for x in range(num_of_superpixels_result)]
     y_list = [[np.int64(-1)] for x in range(num_of_superpixels_result)]
@@ -18,11 +21,88 @@ def labels_to_xy(labels, num_of_superpixels_result, width, height):
             x_list[labels[col][row]].append(row)
             y_list[labels[col][row]].append(col)
 
-    # print(x_list)
     for i in range(num_of_superpixels_result):
         x_list[i].pop(0)
         y_list[i].pop(0)
         
+    '''
+    2. Distance-based centroid within fragments
+    '''
+    MDE_list    = [[np.float64(-1)] for x in range(num_of_superpixels_result)]
+    stereo_list = [[np.float64(-1)] for x in range(num_of_superpixels_result)]
+    distance_list = [[np.float64(-1)] for x in range(num_of_superpixels_result)]
+    min_dist_index_num = np.zeros((num_of_superpixels_result), dtype=np.int16)
+    # Data = [x_pos, y_pos, stereo_depth, MDE_depth, fragment_size] array
+    seg_center = np.zeros((num_of_superpixels_result, 5))    
+    
+    for i in range(num_of_superpixels_result):
+        # assert(len(x_list[i]) == len(y_list[i]))
+        L = len(x_list[i])
+        sum_x = 0
+        sum_y = 0
+        
+        for j in range(L):
+            sum_x += x_list[i][j]
+            sum_y += y_list[i][j]
+
+        avg_x = sum_x/L
+        avg_y = sum_y/L
+        
+        for j in range(L):
+            # Depth within fragment
+            MDE_list[i].append(Depth_pred[y_list[i][j],x_list[i][j]])
+            stereo_list[i].append(Depth_stereo[y_list[i][j],x_list[i][j]])
+            # Distance within fragment's centroid
+            distance_list[i].append( (x_list[i][j]-avg_x)**2 + (y_list[i][j]-avg_y)**2 )
+        
+        MDE_list[i].pop(0)
+        stereo_list[i].pop(0)
+        distance_list[i].pop(0)
+        
+        min_dist_index_num[i] = distance_list[i].index(min(distance_list[i]))
+
+        # Output Data Generation
+        MDE_np = np.array(MDE_list[i])
+        median_MDE = np.median(MDE_np)
+        stereo_np = np.array(stereo_list[i])
+        median_stereo = np.median(stereo_np)
+        x_pos = x_list[i][min_dist_index_num[i]]
+        y_pos = y_list[i][min_dist_index_num[i]]
+        
+        seg_center[i] = [x_pos, y_pos, median_stereo, median_stereo, L]
+    
+    '''
+    3. scaling
+    '''
+    seg_count = 0
+    stereo_sum = 0
+    pred_sum = 0
+    for i in range(num_of_superpixels_result):
+        max_val = 0
+        min_val = 1000
+        
+        L = len(x_list[i])
+        for j in range(L):
+            x_pos = x_list[i][j]
+            y_pos = y_list[i][j]
+            stereo_val = Depth_stereo[y_pos,x_pos]
+            pred_val = Depth_pred[y_pos,x_pos]
+            
+            if stereo_val<min_val:
+                min_val=stereo_val
+            if stereo_val>max_val:
+                max_val=stereo_val
+
+        # no support for numpy funtion (delete,all, any, sum etc) 
+        if 1.5*min_val>max_val and min_val != 0:
+            stereo_sum += stereo_val
+            pred_sum += pred_val
+            seg_count+=1
+            
+    scaling_factor = stereo_sum/pred_sum
+            
+    return seg_center, scaling_factor
+
 
 class SuperPixelSampler:
     def  __init__(self):
@@ -50,9 +130,12 @@ class SuperPixelSampler:
         # get number of superpixel's group(slice)
         num_of_superpixels_result = self.seeds.getNumberOfSuperpixels()
 
+
+        '''
+        numba 사용을 위한 함수 call
+        (Note: jitlcass 지원은 현재 초기 상태이다. 모든 특징들이 구현된 것은 아니다.)
+        '''
         # Convert 'labels' to 'x&y coordinate list'
-        st = t.time()
-        labels_to_xy(labels, num_of_superpixels_result, self.width, self.height)
-        et = t.time()
-        print(et-st)
+        # 95ms >> 2.5ms
+        self.seg_center = superpixel(labels, num_of_superpixels_result, self.width, self.height, self.Depth_stereo, self.Depth_pred)
         

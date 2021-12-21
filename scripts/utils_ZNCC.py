@@ -38,11 +38,11 @@ def zncc_left(left_image, right_image, D, R, adaptive):
             
             
             # # Minimum cost value
-            min_cost = 5000
+            min_cost = 10000
             min_disparity = 200
             
             # Considering disparity range
-            for d in range(0, D):
+            for d in range(1, D):
                 if x-d-tempR<0:
                     break
                 
@@ -110,7 +110,7 @@ def zncc_right(left_image, right_image, D, R, adaptive):
             min_disparity = 200
             
             # Considering disparity range
-            for d in prange(0, D):
+            for d in prange(1, D):
                 if x+d+tempR>=640:
                     break
                 
