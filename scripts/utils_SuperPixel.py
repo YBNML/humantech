@@ -137,5 +137,6 @@ class SuperPixelSampler:
         '''
         # Convert 'labels' to 'x&y coordinate list'
         # 95ms >> 2.5ms
-        self.seg_center = superpixel(labels, num_of_superpixels_result, self.width, self.height, self.Depth_stereo, self.Depth_pred)
+        self.seg_center, scaling_factor = superpixel(labels, num_of_superpixels_result, self.width, self.height, self.Depth_stereo, self.Depth_pred)
         
+        return self.seg_center, scaling_factor

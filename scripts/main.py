@@ -90,22 +90,22 @@ class HumanTech():
     # Crop for StereoMatching's preprocessing
     def crop(self):
         # In 640x480 case
-        self.rect_left_RGB = self.rect_left_RGB[40:440,140:500]
-        self.rect_right_RGB = self.rect_right_RGB[40:440,140:500]
-        self.rect_left_MDE = self.rect_left_MDE[40:440,140:500]
-        self.rect_right_MDE = self.rect_right_MDE[40:440,140:500]
+        self.crop_rect_left_RGB = self.rect_left_RGB[40:440,140:500]
+        self.crop_rect_right_RGB = self.rect_right_RGB[40:440,140:500]
+        self.crop_rect_left_MDE = self.rect_left_MDE[40:440,140:500]
+        self.crop_rect_right_MDE = self.rect_right_MDE[40:440,140:500]
         
     # Crop for StereoMatching's preprocessing
     def blur(self):
         # Color image blur
-        self.rect_left_RGB      = cv2.GaussianBlur(self.rect_left_RGB, (3,3), 0, 0)
-        self.rect_right_RGB     = cv2.GaussianBlur(self.rect_right_RGB, (3,3), 0, 0)
+        self.crop_rect_left_RGB      = cv2.GaussianBlur(self.crop_rect_left_RGB, (3,3), 0, 0)
+        self.crop_rect_right_RGB     = cv2.GaussianBlur(self.crop_rect_right_RGB, (3,3), 0, 0)
         
     # Crop for StereoMatching's preprocessing
     def rgb2gray(self):
         # convert RGB to Gray for stereo matching
-        self.gray_rect_left_RGB     = rgb2gray(self.rect_left_RGB)
-        self.gray_rect_right_RGB    = rgb2gray(self.rect_right_RGB)
+        self.gray_crop_rect_left_RGB     = rgb2gray(self.crop_rect_left_RGB)
+        self.gray_crop_rect_right_RGB    = rgb2gray(self.crop_rect_right_RGB)
     
     # StereoMatching's preprocessing
     def preprocessing(self):
@@ -123,17 +123,17 @@ class HumanTech():
         st = t.time()
         # Adaptive window size
         G_x = np.array([[-1,0,1]])
-        l_edge = cv2.filter2D(self.gray_rect_left_RGB, cv2.CV_64F, G_x)
-        r_edge = cv2.filter2D(self.gray_rect_right_RGB, cv2.CV_64F, G_x)
+        l_edge = cv2.filter2D(self.gray_crop_rect_left_RGB, cv2.CV_64F, G_x)
+        r_edge = cv2.filter2D(self.gray_crop_rect_right_RGB, cv2.CV_64F, G_x)
         l_edge = np.abs(l_edge)
         r_edge = np.abs(r_edge)
         l_edge_xsum = np.sum(l_edge,axis=1)
         r_edge_xsum = np.sum(r_edge,axis=1)
         # Disparity
-        self.gray_rect_left_RGB = self.gray_rect_left_RGB/255
-        self.gray_rect_right_RGB = self.gray_rect_right_RGB/255
-        self.left_disparity   = zncc_left(self.gray_rect_left_RGB, self.gray_rect_right_RGB, self.D, self.R, l_edge_xsum)
-        self.right_disparity  = zncc_right(self.gray_rect_left_RGB, self.gray_rect_right_RGB, self.D, self.R, r_edge_xsum)
+        self.gray_crop_rect_left_RGB = self.gray_crop_rect_left_RGB/255
+        self.gray_crop_rect_right_RGB = self.gray_crop_rect_right_RGB/255
+        self.left_disparity   = zncc_left(self.gray_crop_rect_left_RGB, self.gray_crop_rect_right_RGB, self.D, self.R, l_edge_xsum)
+        self.right_disparity  = zncc_right(self.gray_crop_rect_left_RGB, self.gray_crop_rect_right_RGB, self.D, self.R, r_edge_xsum)
         # Depth 
         self.left_stereo_depth = self.BL*self.F/self.left_disparity
         self.right_stereo_depth = self.BL*self.F/self.right_disparity
@@ -144,13 +144,22 @@ class HumanTech():
     def superpixel(self):
         print('Starting SuperPixel computation...')
         st = t.time()
-        self.sp.superPixel(self.rect_left_RGB, self.left_stereo_depth, self.rect_left_MDE)
-        self.sp.superPixel(self.rect_right_RGB, self.right_stereo_depth, self.rect_right_MDE)
-        # self.scaling()
+        __, self.left_scaling_factor = self.sp.superPixel(self.crop_rect_left_RGB, self.left_stereo_depth, self.crop_rect_left_MDE)
+        __, self.right_scaling_factor = self.sp.superPixel(self.crop_rect_right_RGB, self.right_stereo_depth, self.crop_rect_right_MDE)
         et = t.time()
         print('\tSuperPixel execution time \t\t\t= {:.3f}s'.format(et-st))
-        
     
+    # Depth scaling
+    def scaling(self):
+        print('Scaling SuperPixel computation...')
+        st = t.time()
+        self.rect_left_MDE = self.rect_left_MDE * self.left_scaling_factor
+        self.rect_left_MDE = self.rect_left_MDE * self.left_scaling_factor
+        print("test")
+        et = t.time()
+        print('\tScaling execution time \t\t\t= {:.3f}s'.format(et-st))
+        
+    # 
     def display(self):
         RGB_viz = np.hstack((self.rect_left_RGB,self.rect_right_RGB))
         cv2.imshow("1. RGB_viz", RGB_viz)
