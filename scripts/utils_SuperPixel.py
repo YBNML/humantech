@@ -69,7 +69,7 @@ def superpixel(labels, num_of_superpixels_result, width, height, Depth_stereo, D
         x_pos = x_list[i][min_dist_index_num[i]]
         y_pos = y_list[i][min_dist_index_num[i]]
         
-        seg_center[i] = [x_pos, y_pos, median_stereo, median_stereo, L]
+        seg_center[i] = [x_pos, y_pos, median_stereo, median_MDE, L]
     
     '''
     3. scaling

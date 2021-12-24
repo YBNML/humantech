@@ -15,15 +15,13 @@ from utils_Parameter import parameter
 from utils_Input import Image_load
 from utils_Rotation import rotate_data          # function
 from utils_Rectification import Rectification
+from utils_Navi import avoidObstacleHorizontal, display_navi
 
 from utils_ZNCC import zncc_left, zncc_right
 import utils_stereo_matching as sm
 
 from utils_SuperPixel import SuperPixelSampler
-
 from utils_Link import Link_Adabins
-
-
 from utils_Display import DISPLAY
 
 '''
@@ -151,15 +149,42 @@ class HumanTech():
     
     # Depth scaling
     def scaling(self):
-        print('Scaling SuperPixel computation...')
+        print('Starting Scaling computation...')
         st = t.time()
         self.rect_left_MDE = self.rect_left_MDE * self.left_scaling_factor
-        self.rect_left_MDE = self.rect_left_MDE * self.left_scaling_factor
-        print("test")
+        self.rect_right_MDE = self.rect_right_MDE * self.right_scaling_factor
         et = t.time()
-        print('\tScaling execution time \t\t\t= {:.3f}s'.format(et-st))
+        print('\tScaling execution time \t\t\t\t= {:.3f}s'.format(et-st))
         
-    # 
+    
+    def navi_preprocessing(self):
+        print('Starting Navi\'s Preprocessing computation...')
+        st = t.time()
+        # Crop
+        self.merge_rect_left_RGB = self.rect_left_RGB[105:375,:320]
+        self.merge_rect_right_RGB = self.rect_right_RGB[105:375,320:]
+        self.merge_rect_left_MDE = self.rect_left_MDE[105:375,:320]
+        self.merge_rect_right_MDE = self.rect_right_MDE[105:375,320:]
+        self.merge_left_stereo_depth = self.left_stereo_depth[105:375,:320]
+        self.merge_right_stereo_depth = self.right_stereo_depth[105:375,320:]
+        # Superpixel
+        self.left_seg_center, __ = self.sp.superPixel(self.merge_rect_left_RGB, self.merge_left_stereo_depth, self.merge_rect_left_MDE)
+        self.right_seg_center, __ = self.sp.superPixel(self.merge_rect_right_RGB, self.merge_right_stereo_depth, self.merge_rect_right_MDE)
+        self.right_seg_center[:,0] = self.right_seg_center[:,0] + 320
+        # Merge 2 seg_center
+        self.seg_center = np.concatenate((self.left_seg_center,self.right_seg_center), axis=0)
+        et = t.time()
+        print('\tNavi\'s Preprocessing execution time \t\t= {:.3f}s'.format(et-st))
+    
+    # Drone Navigation in 3D-space
+    def navigation(self):
+        print('Starting Navigation computation...')
+        st = t.time()
+        self.fw_vel, self.yaw = avoidObstacleHorizontal(self.seg_center)
+        et = t.time()
+        print('\tNavigation execution time \t\t= {:.3f}s'.format(et-st))
+    
+    
     def display(self):
         RGB_viz = np.hstack((self.rect_left_RGB,self.rect_right_RGB))
         cv2.imshow("1. RGB_viz", RGB_viz)
@@ -182,7 +207,6 @@ class HumanTech():
         
         cv2.waitKey(10)
 
-        # DISPLAY()
     
 if __name__ == '__main__':
     try:
@@ -191,16 +215,22 @@ if __name__ == '__main__':
         
         r=rospy.Rate(10)    
         while not rospy.is_shutdown():
+            "Common Part"
             ht.input_data()
             ht.MDE()
             ht.rectification()
             
+            "Depth Scaling Part"
             ht.preprocessing()
-            
             ht.stereomathcing()
-            
-            
             ht.superpixel()
+            ht.scaling()
+            
+            "Navigation Part"
+            ht.navi_preprocessing()
+            # ht.navi_superpixel()
+            ht.navigation()
+            
             
             ht.display()
             
