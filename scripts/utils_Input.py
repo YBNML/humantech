@@ -4,7 +4,12 @@ import rospy
 from rospy.numpy_msg import numpy_msg
 from sensor_msgs.msg import Image
 
+import cv2
 import numpy as np
+
+from pathlib import Path
+FILE = Path(__file__).resolve()
+Dataset_WS = FILE.parents[0]
 
 # Global Variable
 left_color  = np.zeros((480,640,3), dtype=np.uint8)
@@ -46,6 +51,9 @@ class Image_load():
         rospy.Subscriber("/firefly/left_cam_RGBD/Depth", Image, callback_left_Depth)
         rospy.Subscriber("/firefly/right_cam_RGBD/Depth", Image, callback_right_Depth)
         
+        # opt
+        self.count = 1
+        
     # Load RGB image
     def ROS_RGB(self):
         global left_color, right_color
@@ -55,6 +63,18 @@ class Image_load():
     def ROS_GT(self):
         global left_depth, right_depth
         return left_depth, right_depth
+    
+    def test_RGB(self):
+        DIR = str(Dataset_WS) + "/dataset/rgb/"
+        left_rgb = np.load(DIR+"left_color"+str(self.count)+".npy")
+        right_rgb = np.load(DIR+"right_color"+str(self.count)+".npy")
+        return left_rgb, right_rgb
+        
+    def test_GT(self):
+        DIR = str(Dataset_WS) + "/dataset/gt/"
+        left_gt = np.load(DIR+"left_depth"+str(self.count)+".npy")
+        right_gt = np.load(DIR+"right_depth"+str(self.count)+".npy")
+        return left_gt[:,:,2], right_gt[:,:,2]
         
 
 

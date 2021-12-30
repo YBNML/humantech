@@ -2,6 +2,8 @@
 
 class parameter:
     def __init__(self):
+        
+        
         # camera parameter
         self.px = 320.5
         self.py = 240.5

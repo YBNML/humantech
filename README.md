@@ -27,6 +27,8 @@ $ roslaunch rotors_gazebo mav_hovering_example.launch mav_name:=firefly world_na
 
 ## ISSUE
 
-1. 빅데이터 입력 속도 문제
+1. 빅데이터 입력 속도 문제 - numpy, list, dictionary를 다 썼는데, numpy로 결정
 
 2. numba 사용 - 파이선코드를 기계어코드로 변환해주는 라이브러리
+
+3. numba에서는 비어있는 list 사용 못함.(data type 일치때문에 오류 발생)

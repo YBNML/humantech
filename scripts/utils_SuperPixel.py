@@ -94,10 +94,11 @@ def superpixel(labels, num_of_superpixels_result, width, height, Depth_stereo, D
                 max_val=stereo_val
 
         # no support for numpy funtion (delete,all, any, sum etc) 
-        if 1.5*min_val>max_val and min_val != 0:
+        # condition of scaling. 1) 
+        if 1.5*min_val>max_val and min_val != 0 and min_val>1 and max_val<10:
             stereo_sum += stereo_val
             pred_sum += pred_val
-            seg_count+=1
+            # seg_count+=1
             
     scaling_factor = stereo_sum/pred_sum
             

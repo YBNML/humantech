@@ -9,6 +9,7 @@ import rospy
 import cv2
 import time as t
 import numpy as np
+import matplotlib.pyplot as plt
 from skimage.color import rgb2gray
 
 from utils_Parameter import parameter
@@ -53,7 +54,10 @@ class HumanTech():
         print("\n\n")
         self.left_RGB, self.right_RGB   = self.input.ROS_RGB()
         self.left_GT, self.right_GT     = self.input.ROS_GT()
-
+        
+        # self.left_RGB, self.right_RGB   = self.input.test_RGB()
+        # self.left_GT, self.right_GT     = self.input.test_GT()
+    
     # Monocular Depth Estimation 
     def MDE(self):
         print('Starting Monocular_Depth_Estimation computation...')
@@ -73,9 +77,12 @@ class HumanTech():
         et = t.time()
         print("\tRotation execution time \t\t\t= {:.3f}s".format(et-st))
         
+        # 실험할때는 주석처리하기
+        # self.rect_left_GT, self.rect_right_GT = rotate_data(self.left_GT, self.right_GT)
+        
     # Rectification
     def rectification(self):
-        # preprocessing
+        # preprocessing for rectification
         self.rotation()
         
         print('Starting Rectification computation...')
@@ -84,6 +91,9 @@ class HumanTech():
         self.rect_left_MDE, self.rect_right_MDE = self.rect.remap_img(self.rect_left_MDE, self.rect_right_MDE)
         et = t.time()
         print("\tRectification execution time \t\t\t= {:.3f}s".format(et-st))
+        
+        # 실험할때는 주석처리하기
+        # self.rect_left_GT, self.rect_right_GT = self.rect.remap_img(self.rect_left_GT, self.rect_right_GT)
 
     # Crop for StereoMatching's preprocessing
     def crop(self):
@@ -151,8 +161,9 @@ class HumanTech():
     def scaling(self):
         print('Starting Scaling computation...')
         st = t.time()
-        self.rect_left_MDE = self.rect_left_MDE * self.left_scaling_factor
-        self.rect_right_MDE = self.rect_right_MDE * self.right_scaling_factor
+        self.scaled_left_MDE = self.left_MDE * self.left_scaling_factor
+        self.scaled_right_MDE = self.right_MDE * self.right_scaling_factor
+        print("\tScaling Factor : " + str(self.left_scaling_factor) + "  " + str(self.right_scaling_factor))
         et = t.time()
         print('\tScaling execution time \t\t\t\t= {:.3f}s'.format(et-st))
         
@@ -182,30 +193,95 @@ class HumanTech():
         st = t.time()
         self.fw_vel, self.yaw = avoidObstacleHorizontal(self.seg_center)
         et = t.time()
-        print('\tNavigation execution time \t\t= {:.3f}s'.format(et-st))
+        print('\tNavigation execution time \t\t\t= {:.3f}s'.format(et-st))
     
     
     def display(self):
-        RGB_viz = np.hstack((self.rect_left_RGB,self.rect_right_RGB))
-        cv2.imshow("1. RGB_viz", RGB_viz)
+        # Opencv Display : 0
+        # Matplotlib Display : 1
+        display_opt = 1
         
-        __, left_GT_viz = DISPLAY(self.left_GT)
-        __, right_GT_viz = DISPLAY(self.right_GT)
-        GT_viz = np.hstack((left_GT_viz,right_GT_viz))
-        cv2.imshow("2. Depth_viz", GT_viz)
+        # Opencv Display
+        if display_opt == 0:    
+            RGB_viz = np.hstack((self.rect_left_RGB,self.rect_right_RGB))
+            cv2.imshow("1. RGB_viz", RGB_viz)
         
-        __, left_MDE_viz = DISPLAY(self.left_MDE)
-        __, right_MDE_viz = DISPLAY(self.right_MDE)
-        MDE_viz = np.hstack((left_MDE_viz,right_MDE_viz))
-        cv2.imshow("3. MDE_viz", MDE_viz)
+            # __, left_GT_viz = DISPLAY(self.left_GT)
+            # __, right_GT_viz = DISPLAY(self.right_GT)
+            # GT_viz = np.hstack((left_GT_viz,right_GT_viz))
+            # cv2.imshow("2. Depth_viz", GT_viz)
+
+            # __, left_MDE_viz = DISPLAY(self.left_MDE)
+            # __, right_MDE_viz = DISPLAY(self.right_MDE)
+            # MDE_viz = np.hstack((left_MDE_viz,right_MDE_viz))
+            # cv2.imshow("3. MDE_viz", MDE_viz)
+
+
+            # __, left_stereo_depth_viz = DISPLAY(self.left_stereo_depth)
+            # __, right_stereo_depth_viz = DISPLAY(self.right_stereo_depth)
+            # stereo_depth_viz = np.hstack((left_stereo_depth_viz,right_stereo_depth_viz))
+            # cv2.imshow("4. SDE_viz", stereo_depth_viz)
+
+            cv2.waitKey(10)
         
-        
-        __, left_stereo_depth_viz = DISPLAY(self.left_stereo_depth)
-        __, right_stereo_depth_viz = DISPLAY(self.right_stereo_depth)
-        stereo_depth_viz = np.hstack((left_stereo_depth_viz,right_stereo_depth_viz))
-        cv2.imshow("4. SDE_viz", stereo_depth_viz)
-        
-        cv2.waitKey(10)
+        # Matplotlib Display  
+        if display_opt == 1:
+            # 1
+            plt.subplot(4,2,1)
+            plt.imshow(self.left_RGB)
+            plt.title("Raw left image")
+            plt.subplot(4,2,2)
+            plt.imshow(self.right_RGB)
+            plt.title("Raw right image")
+            
+            plt.subplot(4,2,3)
+            plt.imshow(self.left_GT)
+            plt.title("Left GT")
+            plt.subplot(4,2,4)
+            plt.imshow(self.right_GT)
+            plt.title("Right GT")
+            
+            plt.subplot(4,2,5)
+            plt.imshow(self.left_MDE)
+            plt.title("Left MDE")
+            plt.subplot(4,2,6)
+            plt.imshow(self.right_MDE)
+            plt.title("Right MDE")
+            
+            plt.subplot(4,2,7)
+            plt.imshow(self.scaled_left_MDE)
+            plt.title("Left MDE(scaled)")
+            plt.subplot(4,2,8)
+            plt.imshow(self.scaled_right_MDE)
+            plt.title("Right MDE(scaled)")
+            
+            
+            
+            plt.show()
+            
+            # 2
+            plt.subplot(3,2,1)
+            plt.imshow(self.crop_rect_left_RGB)
+            plt.title("left image")
+            plt.subplot(3,2,2)
+            plt.imshow(self.crop_rect_right_RGB)
+            plt.title("right image")
+            
+            plt.subplot(3,2,3)
+            plt.imshow(self.crop_rect_left_MDE)
+            plt.title("left MDE")
+            plt.subplot(3,2,4)
+            plt.imshow(self.crop_rect_right_MDE)
+            plt.title("right MDE")
+            
+            plt.subplot(3,2,5)
+            plt.imshow(self.left_stereo_depth)
+            plt.title("left SDE")
+            plt.subplot(3,2,6)
+            plt.imshow(self.right_stereo_depth)
+            plt.title("right SDE")
+            
+            plt.show()
 
     
 if __name__ == '__main__':
@@ -226,11 +302,11 @@ if __name__ == '__main__':
             ht.superpixel()
             ht.scaling()
             
-            "Navigation Part"
+            # "Navigation Part"
             ht.navi_preprocessing()
-            # ht.navi_superpixel()
             ht.navigation()
             
+            # Gazebo drone control
             
             ht.display()
             

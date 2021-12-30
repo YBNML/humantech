@@ -8,7 +8,7 @@ import math
 import time as t
 import numpy as np
 
-from numba import jit, prange
+from numba import njit, prange
 
 from utils_Parameter import parameter
 
@@ -18,16 +18,16 @@ param = parameter()
 fx = param.get_fx()
 fy = param.get_fy()
 ppx = param.get_px()
-ppy = param.get_fy()
-D = [1e-08, 1e-08, 1e-08, 1e-08, 1e-08]
+ppy = param.get_py()
+D = [1e-08, 1e-08, 1e-08, 1e-08, 1e-08] # no distortion
 
-@jit(nopython = True,  parallel = True, cache = True)
+@njit(parallel = True, cache = True)
 def rotate_data(left_data, right_data):
     # if not, end of the process over.
     assert(left_data.shape == right_data.shape)
     H,W = right_data.shape
     
-    for ih in range(H):
+    for ih in prange(H):
         for iw in range(W):
             l_depth = left_data[ih,iw]
             r_depth = right_data[ih,iw]
@@ -38,9 +38,15 @@ def rotate_data(left_data, right_data):
 
             r2 = x*x + y*y
             
-            f = 1
+            # In case of distortion
+            f = 1   
             ux = x*f
             uy = y*f
+            
+            # In case of non-distortion
+            # f = 1 + D[0]*r2 + D[1]*r2*r2 + D[4]*r2*r2*r2
+            # ux = x*f + 2*D[2]*x*y + D[3]*(r2 + 2*x*x)
+            # uy = y*f + 2*D[3]*x*y + D[2]*(r2 + 2*y*y)
             
             point_x     = l_depth * ux
             point_y     = l_depth * uy
