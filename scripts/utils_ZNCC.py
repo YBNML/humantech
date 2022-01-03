@@ -63,7 +63,7 @@ def zncc_left(left_image, right_image, D, R, adaptive):
                 temp_cost = 0
                 for v in range(-tempR, tempR + 1):
                     for u in range(-tempR, tempR + 1):
-                        temp_cost += (left_image[y+v, x+u] - l_avg)*(right_image[y+v, x+u-d] - r_avg)
+                        temp_cost += ( (left_image[y+v, x+u] - l_avg) * (right_image[y+v, x+u-d] - r_avg) ) / ( l_dev * r_dev)
                 
                 if temp_cost < min_cost:
                     min_cost = temp_cost
@@ -131,7 +131,7 @@ def zncc_right(left_image, right_image, D, R, adaptive):
                 temp_cost = 0
                 for v in range(-tempR, tempR + 1):
                     for u in range(-tempR, tempR + 1):
-                        temp_cost += (left_image[y+v, x+u+d] - l_avg)*(right_image[y+v, x+u] - r_avg)
+                        temp_cost += ( (left_image[y+v, x+u+d] - l_avg)*(right_image[y+v, x+u] - r_avg) ) / ( l_dev * r_dev)
                 
                 if temp_cost < min_cost:
                     min_cost = temp_cost

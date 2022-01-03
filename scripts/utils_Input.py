@@ -52,7 +52,7 @@ class Image_load():
         rospy.Subscriber("/firefly/right_cam_RGBD/Depth", Image, callback_right_Depth)
         
         # opt
-        self.count = 1
+        self.count = 6
         
     # Load RGB image
     def ROS_RGB(self):

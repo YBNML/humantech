@@ -11,6 +11,8 @@ import math
 import numpy as np
 import cv2
 
+from numba import njit
+
 
 # def BehaviourArbitration():
 # Goal = goto
@@ -131,10 +133,14 @@ def detectCorner(depthImage):
  * Returns the angular velocity outputted by the behaviour arbitration scheme
  * This is the obstacle avoid behaviour, should be summed with heading goal
 '''
-def avoidObstacleHorizontal(seg_center) :
+@njit(fastmath=True)
+def avoidObstacle(seg_center) :
     image_height = 270
     image_width  = 640
 
+    image_size = image_height*image_width
+    seg_avg_size = image_size / seg_center.shape[0]
+    
     # detectCorner(depthImage)
     # velocity = displayCollision(depthImage)
 
@@ -142,17 +148,19 @@ def avoidObstacleHorizontal(seg_center) :
     Vert_fObstacleTotal = 0
 	
     for i in range(len(seg_center)):
-        Horz_obstacleBearing = (hfov*seg_center[i][1]/image_width) - (hfov/2) + (hfov/2/image_width)
-        Vert_obstacleBearing = (vfov*seg_center[i][0]/image_height) - (vfov/2) + (vfov/2/image_height)
+        # View Angle (-FOV/2 < x < +FOV/2)
+        Horz_obstacleBearing = (hfov*seg_center[i,0]/image_width) - (hfov/2) + (hfov/2/image_width)
+        Vert_obstacleBearing = (vfov*seg_center[i,1]/image_height) - (vfov/2) + (vfov/2/image_height)
         
         # degree to radian
         Horz_obstacleBearing = Horz_obstacleBearing * math.pi / 180
         Vert_obstacleBearing = Vert_obstacleBearing * math.pi / 180
         
+        # The larger the center, the smaller the border.
         Horz_bearingExponent = np.exp(-1*pow(Horz_obstacleBearing,2)/(2*pow(angularRangeHorz,2)))
         Vert_bearingExponent = np.exp(-1*pow(Vert_obstacleBearing,2)/(2*pow(angularRangeVert,2)))
 
-        distanceExponent = np.exp(-obstacleDistanceGainHorz * seg_center[i][2] * seg_center[i][3])
+        distanceExponent = np.exp(-obstacleDistanceGainHorz * seg_center[i,3] * ((seg_center[i,4]/seg_avg_size)**0.5))
 
         Horz_fObstacleTotal += Horz_obstacleBearing * Horz_bearingExponent * distanceExponent
         Vert_fObstacleTotal += Vert_obstacleBearing * Vert_bearingExponent * distanceExponent
@@ -161,10 +169,6 @@ def avoidObstacleHorizontal(seg_center) :
     yaw = Horz_fObstacleTotal * lambdaObstacleHorz
     Thrust = Vert_fObstacleTotal * lambdaObstacleVert
 
-    # print(yaw,'\t',Thrust)
-
-    # yaw=0
-    # velocity=0  
     return yaw, Thrust
 
 def followGoal(goalAngle, currentBearing) :

@@ -16,7 +16,7 @@ from utils_Parameter import parameter
 from utils_Input import Image_load
 from utils_Rotation import rotate_data          # function
 from utils_Rectification import Rectification
-from utils_Navi import avoidObstacleHorizontal, display_navi
+from utils_Navi import avoidObstacle, display_navi
 
 from utils_ZNCC import zncc_left, zncc_right
 import utils_stereo_matching as sm
@@ -24,6 +24,7 @@ import utils_stereo_matching as sm
 from utils_SuperPixel import SuperPixelSampler
 from utils_Link import Link_Adabins
 from utils_Display import DISPLAY
+from utils_Drone import Drone_CTRL
 
 '''
 1. MDE's depth data scaling with StereoMatching 
@@ -48,6 +49,9 @@ class HumanTech():
         
         # SuperPixel
         self.sp = SuperPixelSampler()
+        
+        # Drone Ctrl
+        self.drone = Drone_CTRL()
 
     # Input image(RGB & GT)
     def input_data(self):
@@ -191,10 +195,17 @@ class HumanTech():
     def navigation(self):
         print('Starting Navigation computation...')
         st = t.time()
-        self.fw_vel, self.yaw = avoidObstacleHorizontal(self.seg_center)
+        self.yaw, self.thrust = avoidObstacle(self.seg_center)
         et = t.time()
         print('\tNavigation execution time \t\t\t= {:.3f}s'.format(et-st))
     
+    def drone_ctrl(self):
+        print('Starting Drone_Control computation...')
+        st = t.time()
+        self.drone.publish(self.yaw, self.thrust)
+        et = t.time()
+        print('\tDrone_Command execution time \t\t\t= {:.3f}s'.format(et-st))
+        
     
     def display(self):
         # Opencv Display : 0
@@ -307,6 +318,7 @@ if __name__ == '__main__':
             ht.navigation()
             
             # Gazebo drone control
+            ht.drone_ctrl()
             
             ht.display()
             
