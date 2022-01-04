@@ -202,7 +202,7 @@ class HumanTech():
     def drone_ctrl(self):
         print('Starting Drone_Control computation...')
         st = t.time()
-        self.drone.publish(self.yaw, self.thrust)
+        self.drone.update(self.yaw, self.thrust)
         et = t.time()
         print('\tDrone_Command execution time \t\t\t= {:.3f}s'.format(et-st))
         

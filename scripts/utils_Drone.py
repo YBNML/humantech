@@ -3,25 +3,25 @@
 import rospy
 import tf
 import std_msgs.msg
-from geometry_msgs.msg import Twist, Transform, PointStamped
+from geometry_msgs.msg import Twist, Transform, Quaternion, Point
 from trajectory_msgs.msg import MultiDOFJointTrajectory, MultiDOFJointTrajectoryPoint
 
 
 class Drone_CTRL():
     def __init__(self):
         # rospy.init_node('Drone_Control')
-        pub = rospy.Publisher('/firefly/command/trajectory', MultiDOFJointTrajectory, queue_size=1)
+        self.pub = rospy.Publisher('/firefly/command/trajectory', MultiDOFJointTrajectory, queue_size=1)
         # sub = rospy.Subscriber('/cluster_decomposer/boxes', BoundingBoxArray, cb, queue_size=1)
         # rospy.spin()
         
-        self.traj_msg = MultiDOFJointTrajectory()
-        self.point_msg = MultiDOFJointTrajectoryPoint()
+        self.msg = MultiDOFJointTrajectory()
         
         self.header = std_msgs.msg.Header()
         self.header.frame_id = 'frame'
-        # self.quaternion = tf.transformations.quaternion_from_euler(0,0,0)
-        # self.traj_msg.joint_names.clear()
-        # self.traj_msg.joint_names = "Rotors"
+        
+        self.quaternion = tf.transformations.quaternion_from_euler(0,0,0)
+        self.velocities = Twist()
+        self.accelerations = Twist()
         
         
         # self.traj_msg.points
@@ -30,11 +30,25 @@ class Drone_CTRL():
         # self.velocities = Twist()
         # self.accelerations = Twist()
         
-    def publish(self, yaw, thrust):
-        print(yaw)
-        print(thrust)
+    def update(self, yaw, thrust):
         # print("test")
+        # print(yaw)
+        # print(thrust)
+        # print("test")
+        for i in range(0,2):
+            self.header.stamp = rospy.Time()
+            self.msg.header = self.header
+            
+            x = i+1
+            y = 0
+            z = 1
+            transforms = Transform(translation=Point(x,y,z), 
+                                   rotation=Quaternion(self.quaternion[0],self.quaternion[1],self.quaternion[2],self.quaternion[3]))
+            p = MultiDOFJointTrajectoryPoint([transforms], [self.velocities], [self.accelerations], rospy.Time(i))
+            self.msg.points.append(p) 
+            
         
+        self.pub.publish(self.msg)
         
         
 #         def cb(msg):
