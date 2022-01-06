@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
+import math
+
 import rospy
 import tf
 import std_msgs.msg
-from geometry_msgs.msg import Twist, Transform, Quaternion, Point
+from geometry_msgs.msg import Twist, Transform, Quaternion, Point, Pose
 from trajectory_msgs.msg import MultiDOFJointTrajectory, MultiDOFJointTrajectoryPoint
 
 
@@ -11,7 +13,7 @@ class Drone_CTRL():
     def __init__(self):
         # rospy.init_node('Drone_Control')
         self.pub = rospy.Publisher('/firefly/command/trajectory', MultiDOFJointTrajectory, queue_size=1)
-        # sub = rospy.Subscriber('/cluster_decomposer/boxes', BoundingBoxArray, cb, queue_size=1)
+        rospy.Subscriber('/firefly/ground_truth/pose', Pose, self.update_pose, queue_size=1)
         # rospy.spin()
         
         self.msg = MultiDOFJointTrajectory()
@@ -23,75 +25,55 @@ class Drone_CTRL():
         self.velocities = Twist()
         self.accelerations = Twist()
         
+        # Init parameter
+        self.current_x = 0
+        self.current_y = 0
+        self.current_z = 1
+        self.velocity = 0.5
+        self.desired_yaw = 0
         
-        # self.traj_msg.points
+        self.pub_flag = False
         
-        # replan_pos = PointStamped()
-        # self.velocities = Twist()
-        # self.accelerations = Twist()
         
-    def update(self, yaw, thrust):
-        # print("test")
-        # print(yaw)
-        # print(thrust)
-        # print("test")
-        for i in range(0,2):
+        
+        
+    def update_pose(self, data):
+        self.current_x = data.position.x
+        self.current_y = data.position.y
+        self.current_z = data.position.z
+        
+        quaternion = (
+            data.orientation.x,
+            data.orientation.y,
+            data.orientation.z,
+            data.orientation.w)
+        euler = tf.transformations.euler_from_quaternion(quaternion)
+        self.current_yaw = euler[2]
+        
+        if self.pub_flag:
             self.header.stamp = rospy.Time()
             self.msg.header = self.header
-            
-            x = i+1
-            y = 0
-            z = 1
-            transforms = Transform(translation=Point(x,y,z), 
+
+            self.quaternion = tf.transformations.quaternion_from_euler(0,0,self.desired_yaw)
+            transforms = Transform(translation=Point(self.current_x,self.current_y,self.current_z), 
                                    rotation=Quaternion(self.quaternion[0],self.quaternion[1],self.quaternion[2],self.quaternion[3]))
-            p = MultiDOFJointTrajectoryPoint([transforms], [self.velocities], [self.accelerations], rospy.Time(i))
+
+            self.velocities.linear.x = self.velocity*math.cos(self.current_yaw)
+            self.velocities.linear.y = self.velocity*math.sin(self.current_yaw)
+
+            p = MultiDOFJointTrajectoryPoint([transforms], [self.velocities], [self.accelerations], rospy.Time(rospy.get_time()))
             self.msg.points.append(p) 
             
+            self.pub.publish(self.msg)
+            self.msg.points.clear()
         
-        self.pub.publish(self.msg)
+    def update_desired(self, yaw, thrust):
+        yaw = -1 * yaw * math.pi / 180      # degree to radian
+        self.desired_yaw = yaw
+        self.desired_thrust = thrust
+        
+        self.pub_flag = True
         
         
-#         def cb(msg):
-#         filtered_boxes = BoundingBoxArray()
-#     filtered_boxes.header = msg.header
-#     for box in msg.boxes:
-#         if box.dimensions.x==box.dimensions.y==box.dimensions.z==0.0:
-#             continue
-#         print("dimensions: \n",box.dimensions)
-#         # if(box.dimensions.x)
-#         if(box.dimensions.x>1):
-#             box.dimensions.x = box.dimensions.x/2
-#         if(box.dimensions.y>1):
-#             box.dimensions.y = box.dimensions.y/2
-#         if(box.dimensions.z>1):
-#             box.dimensions.z = box.dimensions.z/2
-#         if(box.dimensions.x>2 or box.dimensions.y>2 or box.dimensions.z>2):
-#             box.dimensions.x = box.dimensions.y =box.dimensions.z =0
-#         # seed random number generator
-#         seed(1)
-#         # generate some integers
-#         box.value = randint(0, 10)
-#         print(box.value)
-#         filtered_boxes.boxes.append(box)
-#     print(filtered_boxes.boxes.__len__())
-
-#     # pc = pcl.PointCloud(10)
-#     # a = np.asarray(pc)
-#     # a[:] = 0
-#     # a[:,0] = filtered_boxes.boxes[0].pose.position.x
-#     # a[:,1] = filtered_boxes.boxes[0].pose.position.y
-#     # a[:,2] = filtered_boxes.boxes[0].pose.position.z
-#     # new_cloud = pcl.PointCloud()
-#     # new_cloud.from_array(a)
-#     # new_cloud = pcl_helper.XYZ_to_XYZRGB(new_cloud,[255,255,255])
-
-#     pub.publish(filtered_boxes)
-#     # pub.publish(new_cloud)
-# if __name__ == '__main__':
-#     rospy.init_node('box_to_pcl')
-#     pub = rospy.Publisher('/boxes_filtered', BoundingBoxArray, queue_size=1)
-#     # pub = rospy.Publisher('PL_filtered', PointCloud2, queue_size=1)
-#     sub = rospy.Subscriber('/cluster_decomposer/boxes', BoundingBoxArray, cb, queue_size=1)
-#     # sub = rospy.Subscriber('/cluster_decomposer/boxes', BoundingBoxArray, cb, queue_size=1)
-    
-#     rospy.spin()
+        
+        

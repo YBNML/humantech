@@ -19,14 +19,14 @@ from numba import njit
 # Obstacle = avoid
 lambdaGoalHorz = 0.5;                   # Linear multiplier for the angular velocity
 lambdaObstacleHorzNormal = 5;           # 장애물 noraml??, 장애물 인지 계수
-lambdaObstacleHorzAggressive = 30;      # 장애물 aggressive??, 장애물 인지 계수
+lambdaObstacleHorzAggressive = 50;      # 장애물 aggressive??, 장애물 인지 계수
 lambdaObstacleHorz = lambdaObstacleHorzNormal # Default value
 
 lambdaObstacleVert = 5
 
 # w, 3페이지에 4번 수식 참고
-weightGoalHorz = 0.4
-weightObstacleHorz = 0.6
+weightGoalHorz = 0.3
+weightObstacleHorz = 0.7
 
 # gain 설정
 obstacleDistanceGainHorzNormal = 0.1            # Smaller = more sensitive 
@@ -34,11 +34,11 @@ obstacleDistanceGainHorzAggressive = 0.005      # Smaller = more sensitive
 obstacleDistanceGainHorz = obstacleDistanceGainHorzNormal  # Default value
 
 # 수평방향 각 최대값 설정
-fov = 82
-hfov = 82
+# fov = 82
+hfov = 112
 vfov = 50
-angularRangeHorz = hfov/2*math.pi/180;
-angularRangeVert = vfov/2*math.pi/180;
+angularRangeHorz = (hfov)*math.pi/180;
+angularRangeVert = (vfov)*math.pi/180;
 
 # 일단 수평에 대해서만 고려를 할거라 생략
 # lambdaObstacleVert = 5
@@ -137,7 +137,10 @@ def detectCorner(depthImage):
 def avoidObstacle(seg_center) :
     image_height = 270
     image_width  = 640
-
+    seg_center = np.array([[100, 135, 5, 5, 100]])
+    seg_center = np.array([[540, 135, 5, 5, 100]])
+    L = seg_center.shape[0]
+    
     image_size = image_height*image_width
     seg_avg_size = image_size / seg_center.shape[0]
     
@@ -147,7 +150,11 @@ def avoidObstacle(seg_center) :
     Horz_fObstacleTotal = 0
     Vert_fObstacleTotal = 0
 	
-    for i in range(len(seg_center)):
+    for i in range(L):
+        if seg_center[i,3]>10:
+            seg_center[i,3] = 10
+        
+        # print(seg_center[i])
         # View Angle (-FOV/2 < x < +FOV/2)
         Horz_obstacleBearing = (hfov*seg_center[i,0]/image_width) - (hfov/2) + (hfov/2/image_width)
         Vert_obstacleBearing = (vfov*seg_center[i,1]/image_height) - (vfov/2) + (vfov/2/image_height)
@@ -160,12 +167,15 @@ def avoidObstacle(seg_center) :
         Horz_bearingExponent = np.exp(-1*pow(Horz_obstacleBearing,2)/(2*pow(angularRangeHorz,2)))
         Vert_bearingExponent = np.exp(-1*pow(Vert_obstacleBearing,2)/(2*pow(angularRangeVert,2)))
 
-        distanceExponent = np.exp(-obstacleDistanceGainHorz * seg_center[i,3] * ((seg_center[i,4]/seg_avg_size)**0.5))
+        distanceExponent = np.exp(-obstacleDistanceGainHorz * seg_center[i,3] * ((seg_center[i,4]/seg_avg_size)**0.5)) 
 
-        Horz_fObstacleTotal += Horz_obstacleBearing * Horz_bearingExponent * distanceExponent
-        Vert_fObstacleTotal += Vert_obstacleBearing * Vert_bearingExponent * distanceExponent
-    
-    # 단위는 radian
+        Horz_fObstacleTotal += Horz_obstacleBearing * Horz_bearingExponent * distanceExponent * (image_width/L)
+        Vert_fObstacleTotal += Vert_obstacleBearing * Vert_bearingExponent * distanceExponent * (image_height/L)
+        print(Horz_obstacleBearing, Horz_bearingExponent, distanceExponent, Horz_fObstacleTotal)
+        
+        # print(Horz_obstacleBearing * Horz_bearingExponent * distanceExponent * (image_width/L), Horz_fObstacleTotal)
+        
+    # 단위는 degree
     yaw = Horz_fObstacleTotal * lambdaObstacleHorz
     Thrust = Vert_fObstacleTotal * lambdaObstacleVert
 
@@ -231,5 +241,6 @@ def display_navi(Base_img, vel1, vel2, vel3):
     window = cv2.rectangle(window,(vel1_graph_pos_w-vel1_graph_w, vel1_graph_pos_h-vel1_graph_h), (vel1_graph_pos_w+vel1_graph_w, vel1_graph_pos_h+vel1_graph_h), (0,0,0), 2)
 
     cv2.imshow('Navigation',window)
+    cv2.waitKey(0)
 	
     print(vel1, vel2, vel3)

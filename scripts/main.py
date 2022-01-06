@@ -53,14 +53,21 @@ class HumanTech():
         # Drone Ctrl
         self.drone = Drone_CTRL()
 
+
     # Input image(RGB & GT)
     def input_data(self):
         print("\n\n")
         self.left_RGB, self.right_RGB   = self.input.ROS_RGB()
         self.left_GT, self.right_GT     = self.input.ROS_GT()
+        self.left_GT = self.left_GT.reshape((480,640))
+        self.right_GT = self.right_GT.reshape((480,640))
         
         # self.left_RGB, self.right_RGB   = self.input.test_RGB()
         # self.left_GT, self.right_GT     = self.input.test_GT()
+    
+        # self.left_GT = np.nan_to_num(self.left_GT, copy=True)
+        # self.right_GT = np.nan_to_num(self.right_GT, copy=True)
+        # print(self.left_GT)
     
     # Monocular Depth Estimation 
     def MDE(self):
@@ -73,6 +80,7 @@ class HumanTech():
         et = t.time()
         print("\tMonocular_Depth_Estimation execution time \t= {:.3f}s".format(et-st))
         
+        
     # Rotation as preprocessing of rectification
     def rotation(self):
         print('Starting Rotation computation...')
@@ -81,7 +89,7 @@ class HumanTech():
         et = t.time()
         print("\tRotation execution time \t\t\t= {:.3f}s".format(et-st))
         
-        # 실험할때는 주석처리하기
+        # GT
         # self.rect_left_GT, self.rect_right_GT = rotate_data(self.left_GT, self.right_GT)
         
     # Rectification
@@ -96,7 +104,7 @@ class HumanTech():
         et = t.time()
         print("\tRectification execution time \t\t\t= {:.3f}s".format(et-st))
         
-        # 실험할때는 주석처리하기
+        # GT
         # self.rect_left_GT, self.rect_right_GT = self.rect.remap_img(self.rect_left_GT, self.rect_right_GT)
 
     # Crop for StereoMatching's preprocessing
@@ -191,6 +199,16 @@ class HumanTech():
         et = t.time()
         print('\tNavi\'s Preprocessing execution time \t\t= {:.3f}s'.format(et-st))
     
+        # GT
+        # self.merge_rect_left_GT = self.rect_left_GT[105:375,:320]
+        # self.merge_rect_right_GT = self.rect_right_GT[105:375,320:]
+        # self.left_seg_center, __ = self.sp.superPixel(self.merge_rect_left_RGB, self.merge_left_stereo_depth, self.merge_rect_left_GT)
+        # self.right_seg_center, __ = self.sp.superPixel(self.merge_rect_right_RGB, self.merge_right_stereo_depth, self.merge_rect_right_GT)
+        # self.right_seg_center[:,0] = self.right_seg_center[:,0] + 320
+        # self.seg_center = np.concatenate((self.left_seg_center,self.right_seg_center), axis=0)
+        
+        
+    
     # Drone Navigation in 3D-space
     def navigation(self):
         print('Starting Navigation computation...')
@@ -202,7 +220,7 @@ class HumanTech():
     def drone_ctrl(self):
         print('Starting Drone_Control computation...')
         st = t.time()
-        self.drone.update(self.yaw, self.thrust)
+        self.drone.update_desired(self.yaw, self.thrust)
         et = t.time()
         print('\tDrone_Command execution time \t\t\t= {:.3f}s'.format(et-st))
         
@@ -298,9 +316,7 @@ class HumanTech():
 if __name__ == '__main__':
     try:
         ht = HumanTech()
-        
-        
-        r=rospy.Rate(10)    
+           
         while not rospy.is_shutdown():
             "Common Part"
             ht.input_data()
@@ -320,10 +336,8 @@ if __name__ == '__main__':
             # Gazebo drone control
             ht.drone_ctrl()
             
-            ht.display()
+            # ht.display()
             
-            r.sleep()
-
     except rospy.ROSInterruptException:
         pass
     finally:

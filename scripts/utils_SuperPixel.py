@@ -20,11 +20,19 @@ def superpixel(labels, num_of_superpixels_result, width, height, Depth_stereo, D
         for col in range(height):
             x_list[labels[col][row]].append(row)
             y_list[labels[col][row]].append(col)
-
-    for i in range(num_of_superpixels_result):
+            
+    for i in range(num_of_superpixels_result-1,-1,-1):
         x_list[i].pop(0)
         y_list[i].pop(0)
         
+        xL = len(x_list[i])
+        yL = len(y_list[i])
+        if xL==0 or yL==0:
+            x_list.pop(i)
+            y_list.pop(i)
+            num_of_superpixels_result = num_of_superpixels_result - 1
+            
+            
     '''
     2. Distance-based centroid within fragments
     '''
@@ -32,19 +40,19 @@ def superpixel(labels, num_of_superpixels_result, width, height, Depth_stereo, D
     stereo_list = [[np.float64(-1)] for x in range(num_of_superpixels_result)]
     distance_list = [[np.float64(-1)] for x in range(num_of_superpixels_result)]
     min_dist_index_num = np.zeros((num_of_superpixels_result), dtype=np.int16)
-    # Data = [x_pos, y_pos, stereo_depth, MDE_depth, fragment_size] array
+    # seg_center = [x_pos, y_pos, stereo_depth, MDE_depth, fragment_size] array
     seg_center = np.zeros((num_of_superpixels_result, 5))    
     
     for i in range(num_of_superpixels_result):
-        # assert(len(x_list[i]) == len(y_list[i]))
         L = len(x_list[i])
+        
         sum_x = 0
         sum_y = 0
         
         for j in range(L):
             sum_x += x_list[i][j]
             sum_y += y_list[i][j]
-
+            
         avg_x = sum_x/L
         avg_y = sum_y/L
         
@@ -100,7 +108,10 @@ def superpixel(labels, num_of_superpixels_result, width, height, Depth_stereo, D
             pred_sum += pred_val
             # seg_count+=1
             
-    scaling_factor = stereo_sum/pred_sum
+    if (pred_sum!=0 and stereo_sum!=0):
+        scaling_factor = stereo_sum/pred_sum
+    else:
+        scaling_factor = 1
             
     return seg_center, scaling_factor
 
@@ -130,8 +141,7 @@ class SuperPixelSampler:
         labels = self.seeds.getLabels() 
         # get number of superpixel's group(slice)
         num_of_superpixels_result = self.seeds.getNumberOfSuperpixels()
-
-
+        
         '''
         numba 사용을 위한 함수 call
         (Note: jitlcass 지원은 현재 초기 상태이다. 모든 특징들이 구현된 것은 아니다.)

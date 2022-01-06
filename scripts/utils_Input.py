@@ -43,7 +43,7 @@ class Image_load():
         # ROS
         rospy.init_node('HumanTech_NODE', anonymous=True)
         rospy.loginfo("Waiting for HumanTech_NODE")
-        r=rospy.Rate(20)    
+        # r=rospy.Rate(20)    
 
         # Subscribe Node
         rospy.Subscriber("/firefly/left_cam_RGBD/RGB", Image, callback_left_Color)
