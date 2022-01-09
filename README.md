@@ -48,10 +48,10 @@ $ rosdep install --from-paths src --ignore-src -y -r
 
 (The command is different depending on the Python interpreter used.)
 $ catkin_make --cmake-args \
-$             -DCMAKE_BUILD_TYPE=Release \
-$             -DPYTHON_EXECUTABLE=/home/iasl/anaconda3/bin/python \
-$             -DPYTHON_INCLUDE_DIR=/home/iasl/anaconda3/include/python3.8 \
-$             -DPYTHON_LIBRARY=/home/iasl/anaconda3/lib/libpython3.8.so
+             -DCMAKE_BUILD_TYPE=Release \
+             -DPYTHON_EXECUTABLE=/home/iasl/anaconda3/bin/python \
+             -DPYTHON_INCLUDE_DIR=/home/iasl/anaconda3/include/python3.8 \
+             -DPYTHON_LIBRARY=/home/iasl/anaconda3/lib/libpython3.8.so
 ```
 
 5. ImportError: dynamic module does not define init function (init_tf2) [[reference]](https://answers.ros.org/question/340862/importerror-dynamic-module-does-not-define-init-function-init_tf2/)

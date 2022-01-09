@@ -137,12 +137,12 @@ def detectCorner(depthImage):
 def avoidObstacle(seg_center) :
     image_height = 270
     image_width  = 640
-    seg_center = np.array([[100, 135, 5, 5, 100]])
-    seg_center = np.array([[540, 135, 5, 5, 100]])
+    # seg_center = np.array([[100, 135, 5, 5, 100]])
+    # seg_center = np.array([[540, 135, 5, 5, 100]])
     L = seg_center.shape[0]
     
     image_size = image_height*image_width
-    seg_avg_size = image_size / seg_center.shape[0]
+    seg_avg_size = image_size / L
     
     # detectCorner(depthImage)
     # velocity = displayCollision(depthImage)
@@ -167,11 +167,11 @@ def avoidObstacle(seg_center) :
         Horz_bearingExponent = np.exp(-1*pow(Horz_obstacleBearing,2)/(2*pow(angularRangeHorz,2)))
         Vert_bearingExponent = np.exp(-1*pow(Vert_obstacleBearing,2)/(2*pow(angularRangeVert,2)))
 
-        distanceExponent = np.exp(-obstacleDistanceGainHorz * seg_center[i,3] * ((seg_center[i,4]/seg_avg_size)**0.5)) 
+        distanceExponent = np.exp(-obstacleDistanceGainHorz * seg_center[i,3]) 
 
-        Horz_fObstacleTotal += Horz_obstacleBearing * Horz_bearingExponent * distanceExponent * (image_width/L)
+        Horz_fObstacleTotal += Horz_obstacleBearing * Horz_bearingExponent * distanceExponent * (image_width/L) * ((seg_center[i,4]/seg_avg_size)**0.5)
         Vert_fObstacleTotal += Vert_obstacleBearing * Vert_bearingExponent * distanceExponent * (image_height/L)
-        print(Horz_obstacleBearing, Horz_bearingExponent, distanceExponent, Horz_fObstacleTotal)
+        # print(Horz_obstacleBearing, Horz_bearingExponent, distanceExponent, Horz_fObstacleTotal)
         
         # print(Horz_obstacleBearing * Horz_bearingExponent * distanceExponent * (image_width/L), Horz_fObstacleTotal)
         

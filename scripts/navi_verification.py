@@ -157,9 +157,9 @@ if __name__ == '__main__':
             ht.navigation()
             
             # Gazebo drone control Part
-            # ht.drone_ctrl()
+            ht.drone_ctrl()
             
-            ht.drone_display()
+            # ht.drone_display()
             
             
     except rospy.ROSInterruptException:

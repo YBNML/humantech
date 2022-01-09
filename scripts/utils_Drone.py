@@ -55,7 +55,7 @@ class Drone_CTRL():
             self.msg.header = self.header
 
             self.quaternion = tf.transformations.quaternion_from_euler(0,0,self.desired_yaw)
-            transforms = Transform(translation=Point(self.current_x,self.current_y,self.current_z), 
+            transforms = Transform(translation=Point(self.current_x,self.current_y,1), 
                                    rotation=Quaternion(self.quaternion[0],self.quaternion[1],self.quaternion[2],self.quaternion[3]))
 
             self.velocities.linear.x = self.velocity*math.cos(self.current_yaw)
