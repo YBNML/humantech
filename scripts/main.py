@@ -98,11 +98,8 @@ class HumanTech():
     def stereomathcing(self):
         print('Starting ZNCC&WTA computation...')
         st = t.time()
-        print("@@")
-        print(self.rect_right_MDE)
-        self.t1, self.t2 =  self.sgbm.stereo_depth()
-        # self.left_stereo_depth, self.right_stereo_depth =  self.sgbm.stereo_depth(self.rect_left_RGB, self.rect_right_RGB, self.rect_left_MDE, self.rect_right_MDE)
-        # self.crop_rect_left_RGB, self.crop_rect_right_RGB, self.crop_rect_left_MDE, self.crop_rect_right_MDE = self.sgbm.get_crop()
+        self.left_stereo_depth, self.right_stereo_depth =  self.sgbm.stereo_depth(self.rect_left_RGB, self.rect_right_RGB, self.rect_left_MDE, self.rect_right_MDE)
+        self.crop_rect_left_RGB, self.crop_rect_right_RGB, self.crop_rect_left_MDE, self.crop_rect_right_MDE = self.sgbm.get_crop()
         et = t.time()
         print('\tZNCC & WTA execution time \t\t\t= {:.3f}s'.format(et-st))
         
@@ -271,8 +268,8 @@ if __name__ == '__main__':
             
             # "Depth Scaling Part"
             ht.stereomathcing()
-            # ht.superpixel()
-            # ht.scaling()
+            ht.superpixel()
+            ht.scaling()
             
             # "Navigation Part"
             # ht.navi_preprocessing()

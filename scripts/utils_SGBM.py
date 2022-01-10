@@ -15,7 +15,7 @@ class SGBM:
         self.BL     = self.param.get_BL()
         self.F      = self.param.get_f()
         
-        min_disparity = 0
+        min_disparity = 1
         max_disparity = self.D
         
         # https://docs.opencv.org/trunk/d2/d85/classcv_1_1StereoSGBM.html
@@ -32,21 +32,21 @@ class SGBM:
         self.right_matcher = cv2.ximgproc.createRightMatcher(self.left_matcher)
 
 
-    def stereo_depth(self):
+    def stereo_depth(self, left_img, right_img, left_mde, right_mde):
         print("1@@")
-        self.left_img = left_img1
-        self.right_img = right_img2
-        self.left_mde = left_mde3
-        self.right_mde = right_mde4
+        self.left_img = left_img
+        self.right_img = right_img
+        self.left_mde = left_mde
+        self.right_mde = right_mde
         
-        # self.preprocessing()
+        self.preprocessing()
         
-        # self.disparity()
+        self.disparity()
         
-        # left_stereo = self.BL*self.F/self.left_disp
-        # right_sterep = self.BL*self.F/self.right_disp
+        left_stereo = self.BL*self.F/self.left_disp
+        right_sterep = self.BL*self.F/self.right_disp
         
-        return 0, 0
+        return left_stereo, right_sterep
 
     # Crop for StereoMatching's preprocessing
     def crop(self):
