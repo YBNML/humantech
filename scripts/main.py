@@ -10,16 +10,16 @@ import cv2
 import time as t
 import numpy as np
 import matplotlib.pyplot as plt
-from skimage.color import rgb2gray
 
 from utils_Parameter import parameter
 from utils_Input import Image_load
 from utils_Rotation import rotate_data          # function
 from utils_Rectification import Rectification
+from utils_SGBM import SGBM
+
+
 from utils_Navi import avoidObstacle, display_navi
 
-from utils_ZNCC import zncc_left, zncc_right
-import utils_stereo_matching as sm
 
 from utils_SuperPixel import SuperPixelSampler
 from utils_Link import Link_Adabins
@@ -33,19 +33,15 @@ from utils_Drone import Drone_CTRL
 class HumanTech():
     # class declaration
     def __init__(self):
-        # Load init setting data
-        self.param  = parameter()
-        self.D = self.param.get_D()     # Max disparity
-        self.R = self.param.get_R()     # Size of window to consider around the scan line point
-        self.BL = self.param.get_BL()
-        self.F = self.param.get_f()
-        
         # Load input data from gazabo
         self.input = Image_load()
         # Adabins
         self.adabins = Link_Adabins()
         # Rectification
         self.rect = Rectification()
+        
+        # ZNCC
+        self.sgbm = SGBM()
         
         # SuperPixel
         self.sp = SuperPixelSampler()
@@ -59,22 +55,17 @@ class HumanTech():
         print("\n\n")
         self.left_RGB, self.right_RGB   = self.input.ROS_RGB()
         self.left_GT, self.right_GT     = self.input.ROS_GT()
-        self.left_GT = self.left_GT.reshape((480,640))
-        self.right_GT = self.right_GT.reshape((480,640))
         
         # self.left_RGB, self.right_RGB   = self.input.test_RGB()
         # self.left_GT, self.right_GT     = self.input.test_GT()
     
-        # self.left_GT = np.nan_to_num(self.left_GT, copy=True)
-        # self.right_GT = np.nan_to_num(self.right_GT, copy=True)
-        # print(self.left_GT)
     
     # Monocular Depth Estimation 
     def MDE(self):
         print('Starting Monocular_Depth_Estimation computation...')
         st = t.time()
-        left_mde_input  = self.left_RGB
-        right_mde_input = self.right_RGB
+        left_mde_input  = self.left_RGB.copy()
+        right_mde_input = self.right_RGB.copy()
         self.left_MDE   = self.adabins.predict(left_mde_input)
         self.right_MDE  = self.adabins.predict(right_mde_input)
         et = t.time()
@@ -89,8 +80,6 @@ class HumanTech():
         et = t.time()
         print("\tRotation execution time \t\t\t= {:.3f}s".format(et-st))
         
-        # GT
-        # self.rect_left_GT, self.rect_right_GT = rotate_data(self.left_GT, self.right_GT)
         
     # Rectification
     def rectification(self):
@@ -104,59 +93,16 @@ class HumanTech():
         et = t.time()
         print("\tRectification execution time \t\t\t= {:.3f}s".format(et-st))
         
-        # GT
-        # self.rect_left_GT, self.rect_right_GT = self.rect.remap_img(self.rect_left_GT, self.rect_right_GT)
-
-    # Crop for StereoMatching's preprocessing
-    def crop(self):
-        # In 640x480 case
-        self.crop_rect_left_RGB = self.rect_left_RGB[40:440,140:500]
-        self.crop_rect_right_RGB = self.rect_right_RGB[40:440,140:500]
-        self.crop_rect_left_MDE = self.rect_left_MDE[40:440,140:500]
-        self.crop_rect_right_MDE = self.rect_right_MDE[40:440,140:500]
-        
-    # Crop for StereoMatching's preprocessing
-    def blur(self):
-        # Color image blur
-        self.crop_rect_left_RGB      = cv2.GaussianBlur(self.crop_rect_left_RGB, (3,3), 0, 0)
-        self.crop_rect_right_RGB     = cv2.GaussianBlur(self.crop_rect_right_RGB, (3,3), 0, 0)
-        
-    # Crop for StereoMatching's preprocessing
-    def rgb2gray(self):
-        # convert RGB to Gray for stereo matching
-        self.gray_crop_rect_left_RGB     = rgb2gray(self.crop_rect_left_RGB)
-        self.gray_crop_rect_right_RGB    = rgb2gray(self.crop_rect_right_RGB)
-    
-    # StereoMatching's preprocessing
-    def preprocessing(self):
-        print('Starting Preprocessing computation...')
-        st = t.time()
-        self.crop()
-        self.blur()
-        self.rgb2gray()
-        et = t.time()
-        print("\tPreprocessing execution time \t\t\t= {:.3f}s".format(et-st))
         
     # ZNCC & WTA - StereoMatching
     def stereomathcing(self):
         print('Starting ZNCC&WTA computation...')
         st = t.time()
-        # Adaptive window size
-        G_x = np.array([[-1,0,1]])
-        l_edge = cv2.filter2D(self.gray_crop_rect_left_RGB, cv2.CV_64F, G_x)
-        r_edge = cv2.filter2D(self.gray_crop_rect_right_RGB, cv2.CV_64F, G_x)
-        l_edge = np.abs(l_edge)
-        r_edge = np.abs(r_edge)
-        l_edge_xsum = np.sum(l_edge,axis=1)
-        r_edge_xsum = np.sum(r_edge,axis=1)
-        # Disparity
-        self.gray_crop_rect_left_RGB = self.gray_crop_rect_left_RGB/255
-        self.gray_crop_rect_right_RGB = self.gray_crop_rect_right_RGB/255
-        self.left_disparity   = zncc_left(self.gray_crop_rect_left_RGB, self.gray_crop_rect_right_RGB, self.D, self.R, l_edge_xsum)
-        self.right_disparity  = zncc_right(self.gray_crop_rect_left_RGB, self.gray_crop_rect_right_RGB, self.D, self.R, r_edge_xsum)
-        # Depth 
-        self.left_stereo_depth = self.BL*self.F/self.left_disparity
-        self.right_stereo_depth = self.BL*self.F/self.right_disparity
+        print("@@")
+        print(self.rect_right_MDE)
+        self.t1, self.t2 =  self.sgbm.stereo_depth()
+        # self.left_stereo_depth, self.right_stereo_depth =  self.sgbm.stereo_depth(self.rect_left_RGB, self.rect_right_RGB, self.rect_left_MDE, self.rect_right_MDE)
+        # self.crop_rect_left_RGB, self.crop_rect_right_RGB, self.crop_rect_left_MDE, self.crop_rect_right_MDE = self.sgbm.get_crop()
         et = t.time()
         print('\tZNCC & WTA execution time \t\t\t= {:.3f}s'.format(et-st))
         
@@ -318,23 +264,22 @@ if __name__ == '__main__':
         ht = HumanTech()
            
         while not rospy.is_shutdown():
-            "Common Part"
+            # "Common Part"
             ht.input_data()
             ht.MDE()
             ht.rectification()
             
-            "Depth Scaling Part"
-            ht.preprocessing()
+            # "Depth Scaling Part"
             ht.stereomathcing()
-            ht.superpixel()
-            ht.scaling()
+            # ht.superpixel()
+            # ht.scaling()
             
             # "Navigation Part"
-            ht.navi_preprocessing()
-            ht.navigation()
+            # ht.navi_preprocessing()
+            # ht.navigation()
             
             # Gazebo drone control
-            ht.drone_ctrl()
+            # ht.drone_ctrl()
             
             # ht.display()
             

@@ -14,8 +14,8 @@ Dataset_WS = FILE.parents[0]
 # Global Variable
 left_color  = np.zeros((480,640,3), dtype=np.uint8)
 right_color = np.zeros((480,640,3), dtype=np.uint8)
-left_depth  = np.zeros((480,640,1), dtype=np.float64)
-right_depth = np.zeros((480,640,1), dtype=np.float64)
+left_depth  = np.zeros((480,640), dtype=np.float64)
+right_depth = np.zeros((480,640), dtype=np.float64)
 
 # Subscribe topic(RGB iamge) 
 def callback_left_Color(data):
@@ -62,6 +62,8 @@ class Image_load():
     # Load Ground_Truth depth image
     def ROS_GT(self):
         global left_depth, right_depth
+        left_depth = np.nan_to_num(left_depth, copy=True)
+        right_depth = np.nan_to_num(right_depth, copy=True)
         return left_depth, right_depth
     
     def test_RGB(self):
