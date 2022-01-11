@@ -142,12 +142,7 @@ class SuperPixelSampler:
         # get number of superpixel's group(slice)
         num_of_superpixels_result = self.seeds.getNumberOfSuperpixels()
         
-        '''
-        numba 사용을 위한 함수 call
-        (Note: jitlcass 지원은 현재 초기 상태이다. 모든 특징들이 구현된 것은 아니다.)
-        '''
         # Convert 'labels' to 'x&y coordinate list'
-        # 95ms >> 2.5ms
         self.seg_center, scaling_factor = superpixel(labels, num_of_superpixels_result, self.width, self.height, self.Depth_stereo, self.Depth_pred)
         
         return self.seg_center, scaling_factor

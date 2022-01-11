@@ -11,7 +11,6 @@ import time as t
 import numpy as np
 import matplotlib.pyplot as plt
 
-from utils_Parameter import parameter
 from utils_Input import Image_load
 from utils_Rotation import rotate_data          # function
 from utils_Rectification import Rectification
@@ -25,6 +24,8 @@ from utils_SuperPixel import SuperPixelSampler
 from utils_Link import Link_Adabins
 from utils_Display import DISPLAY
 from utils_Drone import Drone_CTRL
+# Evaluation
+from utils_Eval import evaluate
 
 '''
 1. MDE's depth data scaling with StereoMatching 
@@ -58,6 +59,9 @@ class HumanTech():
         
         # self.left_RGB, self.right_RGB   = self.input.test_RGB()
         # self.left_GT, self.right_GT     = self.input.test_GT()
+        # cv2.imshow("TEST",self.left_RGB)
+        # print(self.left_RGB[320,500,:])
+        # cv2.waitKey(0)
     
     
     # Monocular Depth Estimation 
@@ -140,17 +144,7 @@ class HumanTech():
         # Merge 2 seg_center
         self.seg_center = np.concatenate((self.left_seg_center,self.right_seg_center), axis=0)
         et = t.time()
-        print('\tNavi\'s Preprocessing execution time \t\t= {:.3f}s'.format(et-st))
-    
-        # GT
-        # self.merge_rect_left_GT = self.rect_left_GT[105:375,:320]
-        # self.merge_rect_right_GT = self.rect_right_GT[105:375,320:]
-        # self.left_seg_center, __ = self.sp.superPixel(self.merge_rect_left_RGB, self.merge_left_stereo_depth, self.merge_rect_left_GT)
-        # self.right_seg_center, __ = self.sp.superPixel(self.merge_rect_right_RGB, self.merge_right_stereo_depth, self.merge_rect_right_GT)
-        # self.right_seg_center[:,0] = self.right_seg_center[:,0] + 320
-        # self.seg_center = np.concatenate((self.left_seg_center,self.right_seg_center), axis=0)
-        
-        
+        print('\tNavi\'s Preprocessing execution time \t\t= {:.3f}s'.format(et-st))    
     
     # Drone Navigation in 3D-space
     def navigation(self):
@@ -231,29 +225,49 @@ class HumanTech():
             
             plt.show()
             
-            # 2
-            plt.subplot(3,2,1)
-            plt.imshow(self.crop_rect_left_RGB)
-            plt.title("left image")
-            plt.subplot(3,2,2)
-            plt.imshow(self.crop_rect_right_RGB)
-            plt.title("right image")
+            # # 2
+            # plt.subplot(3,2,1)
+            # plt.imshow(self.crop_rect_left_RGB)
+            # plt.title("left image")
+            # plt.subplot(3,2,2)
+            # plt.imshow(self.crop_rect_right_RGB)
+            # plt.title("right image")
             
-            plt.subplot(3,2,3)
-            plt.imshow(self.crop_rect_left_MDE)
-            plt.title("left MDE")
-            plt.subplot(3,2,4)
-            plt.imshow(self.crop_rect_right_MDE)
-            plt.title("right MDE")
+            # plt.subplot(3,2,3)
+            # plt.imshow(self.crop_rect_left_MDE)
+            # plt.title("left MDE")
+            # plt.subplot(3,2,4)
+            # plt.imshow(self.crop_rect_right_MDE)
+            # plt.title("right MDE")
             
-            plt.subplot(3,2,5)
-            plt.imshow(self.left_stereo_depth)
-            plt.title("left SDE")
-            plt.subplot(3,2,6)
-            plt.imshow(self.right_stereo_depth)
-            plt.title("right SDE")
+            # plt.subplot(3,2,5)
+            # plt.imshow(self.left_stereo_depth)
+            # plt.title("left SDE")
+            # plt.subplot(3,2,6)
+            # plt.imshow(self.right_stereo_depth)
+            # plt.title("right SDE")
             
-            plt.show()
+            # plt.show()
+            
+    def evaluation(self):
+        
+        e1 = evaluate(self.left_GT, self.left_MDE)
+        e2 = evaluate(self.right_GT, self.right_MDE)
+        e = (e1 + e2)
+        
+        print("\nBefore scaling")
+        print("{:>10}, {:>10}, {:>10}, {:>10}, {:>10}, {:>10}".format('a1', 'a2', 'a3', 'rel', 'rms', 'log_10'))
+        print("{:10.4f}, {:10.4f}, {:10.4f}, {:10.4f}, {:10.4f}, {:10.4f}".format(e[0]/2,e[1]/2,e[2]/2,e[3]/2,e[4]/2,e[5]/2))
+        
+        
+        e1 = evaluate(self.left_GT, self.scaled_left_MDE)
+        e2 = evaluate(self.right_GT, self.scaled_right_MDE)
+        e = (e1 + e2)
+        
+        print("After scaling")
+        print("{:>10}, {:>10}, {:>10}, {:>10}, {:>10}, {:>10}".format('a1', 'a2', 'a3', 'rel', 'rms', 'log_10'))
+        print("{:10.4f}, {:10.4f}, {:10.4f}, {:10.4f}, {:10.4f}, {:10.4f}".format(e[0]/2,e[1]/2,e[2]/2,e[3]/2,e[4]/2,e[5]/2))
+        
 
     
 if __name__ == '__main__':
@@ -278,7 +292,16 @@ if __name__ == '__main__':
             # Gazebo drone control
             # ht.drone_ctrl()
             
-            # ht.display()
+            '''
+            Display
+            '''
+            ht.display()
+            
+            '''
+            Evaluation
+            '''
+            # ht.evaluation()
+            
             
     except rospy.ROSInterruptException:
         pass

@@ -52,7 +52,7 @@ class Image_load():
         rospy.Subscriber("/firefly/right_cam_RGBD/Depth", Image, callback_right_Depth)
         
         # opt
-        self.count = 6
+        self.count = 0
         
     # Load RGB image
     def ROS_RGB(self):
@@ -67,15 +67,34 @@ class Image_load():
         return left_depth, right_depth
     
     def test_RGB(self):
-        DIR = str(Dataset_WS) + "/dataset/rgb/"
-        left_rgb = np.load(DIR+"left_color"+str(self.count)+".npy")
-        right_rgb = np.load(DIR+"right_color"+str(self.count)+".npy")
+        DIR             = str(Dataset_WS) + "/dataset/rgb/"
+        
+        temp_left_rgb   = np.load(DIR+"left_color"+str(self.count)+".npy")
+        temp_left_rgb   = cv2.resize(temp_left_rgb, dsize=(960, 720), interpolation=cv2.INTER_LINEAR)
+        left_rgb        = np.zeros((720, 1280 ,3), dtype=np.uint8)
+        left_rgb[:, 160:1120,:] = temp_left_rgb
+        
+        temp_right_rgb  = np.load(DIR+"right_color"+str(self.count)+".npy")
+        temp_right_rgb  = cv2.resize(temp_right_rgb, dsize=(960, 720), interpolation=cv2.INTER_LINEAR)
+        right_rgb       = np.zeros((720, 1280 ,3), dtype=np.uint8)
+        right_rgb[:, 160:1120,:] = temp_right_rgb
+        
         return left_rgb, right_rgb
         
     def test_GT(self):
-        DIR = str(Dataset_WS) + "/dataset/gt/"
-        left_gt = np.load(DIR+"left_depth"+str(self.count)+".npy")
-        right_gt = np.load(DIR+"right_depth"+str(self.count)+".npy")
+        DIR             = str(Dataset_WS) + "/dataset/gt/"
+        
+        temp_left_gt   = np.load(DIR+"left_depth"+str(self.count)+".npy")
+        temp_left_gt   = cv2.resize(temp_left_gt, dsize=(960, 720), interpolation=cv2.INTER_LINEAR)
+        left_gt        = np.zeros((720, 1280 ,3))
+        left_gt[:, 160:1120,:] = temp_left_gt
+        
+        temp_right_gt  = np.load(DIR+"right_depth"+str(self.count)+".npy")
+        temp_right_gt  = cv2.resize(temp_right_gt, dsize=(960, 720), interpolation=cv2.INTER_LINEAR)
+        right_gt       = np.zeros((720, 1280 ,3))
+        right_gt[:, 160:1120,:] = temp_right_gt
+        
+        self.count += 1
         return left_gt[:,:,2], right_gt[:,:,2]
         
 

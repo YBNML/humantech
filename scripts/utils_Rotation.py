@@ -49,14 +49,14 @@ def rotate_data(left_data, right_data):
             # uy = y*f + 2*D[3]*x*y + D[2]*(r2 + 2*y*y)
             
             point_x     = l_depth * ux
-            point_y     = l_depth * uy
+            # point_y     = l_depth * uy
             point_depth = l_depth
             
             l_depth = 0.2588190451*point_x + 0.96592582628*point_depth
             left_data[ih,iw] = l_depth
             
             point_x     = r_depth * ux
-            point_y     = r_depth * uy
+            # point_y     = r_depth * uy
             point_depth = r_depth
             
             r_depth = -0.2588190451*point_x + 0.96592582628*point_depth
