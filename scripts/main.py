@@ -54,14 +54,11 @@ class HumanTech():
     # Input image(RGB & GT)
     def input_data(self):
         print("\n\n")
-        self.left_RGB, self.right_RGB   = self.input.ROS_RGB()
-        self.left_GT, self.right_GT     = self.input.ROS_GT()
+        # self.left_RGB, self.right_RGB   = self.input.ROS_RGB()
+        # self.left_GT, self.right_GT     = self.input.ROS_GT()
         
-        # self.left_RGB, self.right_RGB   = self.input.test_RGB()
-        # self.left_GT, self.right_GT     = self.input.test_GT()
-        # cv2.imshow("TEST",self.left_RGB)
-        # print(self.left_RGB[320,500,:])
-        # cv2.waitKey(0)
+        self.left_RGB, self.right_RGB   = self.input.test_RGB()
+        self.left_GT, self.right_GT     = self.input.test_GT()
     
     
     # Monocular Depth Estimation 
@@ -225,29 +222,29 @@ class HumanTech():
             
             plt.show()
             
-            # # 2
-            # plt.subplot(3,2,1)
-            # plt.imshow(self.crop_rect_left_RGB)
-            # plt.title("left image")
-            # plt.subplot(3,2,2)
-            # plt.imshow(self.crop_rect_right_RGB)
-            # plt.title("right image")
+            # 2
+            plt.subplot(3,2,1)
+            plt.imshow(self.crop_rect_left_RGB)
+            plt.title("left image")
+            plt.subplot(3,2,2)
+            plt.imshow(self.crop_rect_right_RGB)
+            plt.title("right image")
             
-            # plt.subplot(3,2,3)
-            # plt.imshow(self.crop_rect_left_MDE)
-            # plt.title("left MDE")
-            # plt.subplot(3,2,4)
-            # plt.imshow(self.crop_rect_right_MDE)
-            # plt.title("right MDE")
+            plt.subplot(3,2,3)
+            plt.imshow(self.crop_rect_left_MDE)
+            plt.title("left MDE")
+            plt.subplot(3,2,4)
+            plt.imshow(self.crop_rect_right_MDE)
+            plt.title("right MDE")
             
-            # plt.subplot(3,2,5)
-            # plt.imshow(self.left_stereo_depth)
-            # plt.title("left SDE")
-            # plt.subplot(3,2,6)
-            # plt.imshow(self.right_stereo_depth)
-            # plt.title("right SDE")
+            plt.subplot(3,2,5)
+            plt.imshow(self.left_stereo_depth)
+            plt.title("left SDE")
+            plt.subplot(3,2,6)
+            plt.imshow(self.right_stereo_depth)
+            plt.title("right SDE")
             
-            # plt.show()
+            plt.show()
             
     def evaluation(self):
         
@@ -275,17 +272,23 @@ if __name__ == '__main__':
         ht = HumanTech()
            
         while not rospy.is_shutdown():
-            # "Common Part"
+            '''
+            "Common Part"
+            '''
             ht.input_data()
             ht.MDE()
             ht.rectification()
             
-            # "Depth Scaling Part"
+            '''
+            "Depth Scaling Part"
+            '''
             ht.stereomathcing()
             ht.superpixel()
             ht.scaling()
             
-            # "Navigation Part"
+            '''
+            "Navigation Part"
+            '''
             # ht.navi_preprocessing()
             # ht.navigation()
             
@@ -293,14 +296,14 @@ if __name__ == '__main__':
             # ht.drone_ctrl()
             
             '''
-            Display
+            "Display"
             '''
             ht.display()
             
             '''
-            Evaluation
+            "Evaluation"
             '''
-            # ht.evaluation()
+            ht.evaluation()
             
             
     except rospy.ROSInterruptException:

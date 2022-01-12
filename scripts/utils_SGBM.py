@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import cv2
+import time as t
 import numpy as np
 from skimage.color import rgb2gray
 
@@ -16,7 +17,6 @@ class SGBM:
         self.F      = self.param.get_f()
         
         self.min_disparity = 1
-        self.numDisparities = 10
         
 
     def stereo_depth(self, left_img, right_img, left_mde, right_mde):
@@ -28,6 +28,7 @@ class SGBM:
         self.preprocessing()
         
         self.disparity()
+        
         self.right_disp = -self.right_disp
         
         self.left_disp = np.clip(self.left_disp, 0.01, 200)
@@ -37,27 +38,8 @@ class SGBM:
         right_sterep    = 0.2 * self.F /self.right_disp
         
         return left_stereo, right_sterep
-
-    # Crop for StereoMatching's preprocessing
-    def crop(self):
-        # In 640x480 case
-        self.crop_left_img      = self.left_img[40:440,140:500]
-        self.crop_right_img     = self.right_img[40:440,140:500]
-        self.crop_left_mde      = self.left_mde[40:440,140:500]
-        self.crop_right_mde     = self.right_mde[40:440,140:500]
-        
-    # Blur for StereoMatching's preprocessing
-    def blur(self):
-        # Color image blur
-        self.crop_left_img      = cv2.GaussianBlur(self.crop_left_img, (3,3), 0, 0)
-        self.crop_right_img     = cv2.GaussianBlur(self.crop_right_img, (3,3), 0, 0)
-        
-    # GRAY for StereoMatching's preprocessing
-    def rgb2gray(self):
-        # convert RGB to Gray for stereo matching
-        self.gray_crop_left_RGB     = cv2.cvtColor(self.crop_left_img, cv2.COLOR_RGB2GRAY)
-        self.gray_crop_right_RGB    = cv2.cvtColor(self.crop_right_img, cv2.COLOR_RGB2GRAY)
-
+    
+    
     def preprocessing(self):
         self.crop()
         self.blur()
@@ -72,13 +54,46 @@ class SGBM:
         self.l_edge_sum = np.sum(l_edge)
         self.r_edge_sum = np.sum(r_edge)
         
-        self.tempR = 5
+        self.tempR = 3
         if (self.l_edge_sum + self.r_edge_sum) > 10000:
             self.tempR = 3
         elif (self.l_edge_sum + self.r_edge_sum) < 3000:
-            self.tempR = 7
+            self.tempR = 3
+            
+            
+    # Crop for StereoMatching's preprocessing
+    def crop(self):
+        # In 640x480 case
+        if self.left_img.shape[0]==480 and self.left_img.shape[1]==640:
+            self.numDisparities = 140
+            self.crop_left_img      = self.left_img[40:440,:500]
+            self.crop_right_img     =self.right_img[40:440,140:]
+            self.crop_left_mde      = self.left_mde[40:440,:500]
+            self.crop_right_mde     =self.right_mde[40:440,140:]
+        # In 1280x720 case
+        if self.left_img.shape[0]==720 and self.left_img.shape[1]==1280:
+            self.numDisparities = 440
+            self.crop_left_img      = self.left_img[35:685,:840]
+            self.crop_right_img     =self.right_img[35:685,440:]
+            self.crop_left_mde      = self.left_mde[35:685,:840]
+            self.crop_right_mde     =self.right_mde[35:685,440:]
+        
+    # Blur for StereoMatching's preprocessing
+    def blur(self):
+        # Color image blur
+        self.crop_left_img      = cv2.GaussianBlur(self.crop_left_img, (3,3), 0, 0)
+        self.crop_right_img     = cv2.GaussianBlur(self.crop_right_img, (3,3), 0, 0)
+        
+    # GRAY for StereoMatching's preprocessing
+    def rgb2gray(self):
+        # convert RGB to Gray for stereo matching
+        self.gray_crop_left_RGB     = cv2.cvtColor(self.crop_left_img, cv2.COLOR_RGB2GRAY)
+        self.gray_crop_right_RGB    = cv2.cvtColor(self.crop_right_img, cv2.COLOR_RGB2GRAY)
+
+
     
     def disparity(self):
+        
         # https://docs.opencv.org/trunk/d2/d85/classcv_1_1StereoSGBM.html
         self.left_matcher    = cv2.StereoSGBM_create(minDisparity = self.min_disparity,
                                                 numDisparities = self.numDisparities,
@@ -91,10 +106,16 @@ class SGBM:
                                                 speckleRange = 32)
         self.right_matcher = cv2.ximgproc.createRightMatcher(self.left_matcher)
         
+        
+        st = t.time()
         self.gray_crop_left_RGB     = self.gray_crop_left_RGB.astype(np.uint8)
         self.gray_crop_right_RGB    = self.gray_crop_right_RGB.astype(np.uint8)
+        print(t.time()-st)
+        
+        st = t.time()
         self.left_disp   = self.left_matcher.compute(self.gray_crop_left_RGB, self.gray_crop_right_RGB)
         self.right_disp  = self.right_matcher.compute(self.gray_crop_right_RGB, self.gray_crop_left_RGB)
+        print(t.time()-st)
 
         self.left_disp = self.left_disp.astype(np.float32) / 16
         self.right_disp = self.right_disp.astype(np.float32) / 16
