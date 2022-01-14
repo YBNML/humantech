@@ -52,6 +52,12 @@ $ catkin_make --cmake-args \
              -DPYTHON_EXECUTABLE=/home/iasl/anaconda3/bin/python \
              -DPYTHON_INCLUDE_DIR=/home/iasl/anaconda3/include/python3.8 \
              -DPYTHON_LIBRARY=/home/iasl/anaconda3/lib/libpython3.8.so
+(or)
+$ catkin_make --cmake-args \
+             -DCMAKE_BUILD_TYPE=Release \
+             -DPYTHON_EXECUTABLE=/home/iasl/anaconda3/envs/py37/bin/python \
+             -DPYTHON_INCLUDE_DIR=/home/iasl/anaconda3/envs/py37/include/python3.7m \
+             -DPYTHON_LIBRARY=/home/iasl/anaconda3/envs/py37/lib/libpython3.7m.so
 ```
 
 5. ImportError: dynamic module does not define init function (init_tf2) [[reference]](https://answers.ros.org/question/340862/importerror-dynamic-module-does-not-define-init-function-init_tf2/)

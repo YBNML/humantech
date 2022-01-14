@@ -16,7 +16,7 @@ from utils_Parameter import parameter
 from utils_Input import Image_load
 from utils_Rotation import rotate_data          # function
 from utils_Rectification import Rectification
-from utils_Navi import avoidObstacle, display_navi
+from utils_Navi import avoidObstacle
 
 from utils_ZNCC import zncc_left, zncc_right
 import utils_stereo_matching as sm
@@ -52,6 +52,8 @@ class HumanTech():
         
         # Drone Ctrl
         self.drone = Drone_CTRL()
+        
+        self.previous_yaw = 0
 
 
     # Input image(RGB & GT)
@@ -115,8 +117,10 @@ class HumanTech():
         print('Starting Navigation computation...')
         st = t.time()
         self.yaw, self.thrust = avoidObstacle(self.seg_center)
-        print(self.yaw)
+        # self.yaw = 0.3*self.previous_yaw + 0.7*self.yaw + 0.5
+        # self.previous_yaw = self.yaw
         et = t.time()
+        # print(self.yaw)
         print('\tNavigation execution time \t\t\t= {:.3f}s'.format(et-st))
     
     def drone_ctrl(self):
@@ -132,14 +136,15 @@ class HumanTech():
         base_rgb = np.hstack((self.merge_rect_left_RGB,self.merge_rect_right_RGB))
         base_depth = np.hstack((self.merge_rect_left_GT,self.merge_rect_right_GT))
         
-        plt.subplot(2,1,1)
-        plt.imshow(base_rgb)
-        plt.subplot(2,1,2)
-        plt.imshow(base_depth)
-        plt.show()
+        # plt.subplot(2,1,1)
+        # plt.imshow(base_rgb)
+        # plt.subplot(2,1,2)
+        # plt.imshow(base_depth)
+        # plt.show()
+        
         # display_navi(base_img,10,10,10)
-        # cv2.imshow('Navigation',base_img)
-        # cv2.waitKey(0)
+        cv2.imshow('Navigation',base_rgb)
+        cv2.waitKey(1)
         # print()
         
     

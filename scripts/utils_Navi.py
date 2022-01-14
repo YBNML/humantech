@@ -57,7 +57,6 @@ matchedFilterExpectedResult = 3304
 matchedFilterMargin = 800
 
 
-
 def displayObstacleArrayHorz(obstacleMap) :
     # obstacleMap 변수에 따라 수정 가능성
 	displayImage = np.ones([200,obstacleMap.shape[1]*6,3]) 	# [200,obstacleMap's colx6]
@@ -137,7 +136,7 @@ def detectCorner(depthImage):
 def avoidObstacle(seg_center) :
     image_height = 270
     image_width  = 640
-    # seg_center = np.array([[100, 135, 5, 5, 100]])
+    # seg_center = np.array([[100, 135, 5, 5, 100],[100, 135, 5, 50, 100]])
     # seg_center = np.array([[540, 135, 5, 5, 100]])
     L = seg_center.shape[0]
     
@@ -151,13 +150,15 @@ def avoidObstacle(seg_center) :
     Vert_fObstacleTotal = 0
 	
     for i in range(L):
-        if seg_center[i,3]>10:
-            seg_center[i,3] = 10
+        if seg_center[i,3]>20:
+            seg_center[i,3] = 20
         
         # print(seg_center[i])
         # View Angle (-FOV/2 < x < +FOV/2)
         Horz_obstacleBearing = (hfov*seg_center[i,0]/image_width) - (hfov/2) + (hfov/2/image_width)
         Vert_obstacleBearing = (vfov*seg_center[i,1]/image_height) - (vfov/2) + (vfov/2/image_height)
+        
+        # print(Horz_obstacleBearing)
         
         # degree to radian
         Horz_obstacleBearing = Horz_obstacleBearing * math.pi / 180
@@ -169,16 +170,17 @@ def avoidObstacle(seg_center) :
 
         distanceExponent = np.exp(-obstacleDistanceGainHorz * seg_center[i,3]) 
 
-        Horz_fObstacleTotal += Horz_obstacleBearing * Horz_bearingExponent * distanceExponent * (image_width/L) * ((seg_center[i,4]/seg_avg_size)**0.5)
-        Vert_fObstacleTotal += Vert_obstacleBearing * Vert_bearingExponent * distanceExponent * (image_height/L)
-        # print(Horz_obstacleBearing, Horz_bearingExponent, distanceExponent, Horz_fObstacleTotal)
+        Horz_fObstacleTotal += Horz_obstacleBearing * Horz_bearingExponent * distanceExponent * seg_center[i,4]
+        Vert_fObstacleTotal += Vert_obstacleBearing * Vert_bearingExponent * distanceExponent
         
-        # print(Horz_obstacleBearing * Horz_bearingExponent * distanceExponent * (image_width/L), Horz_fObstacleTotal)
+        # print(Horz_obstacleBearing * Horz_bearingExponent * distanceExponent * (image_width/L)
         
     # 단위는 degree
-    yaw = Horz_fObstacleTotal * lambdaObstacleHorz
+    yaw = Horz_fObstacleTotal * lambdaObstacleHorz / 275
     Thrust = Vert_fObstacleTotal * lambdaObstacleVert
-
+    
+    # print(yaw)
+    
     return yaw, Thrust
 
 def followGoal(goalAngle, currentBearing) :
@@ -189,58 +191,58 @@ def sumBehavioursHorz(angVelAvoidHorz, angVelFollowGoal):
     return behaviourSum
 
 
-def display_navi(Base_img, vel1, vel2, vel3):
+# def display_navi(Base_img, vel1, vel2, vel3):
     	
-    HFOV = 117
-    vel_max = 3 # [m/s]
+#     HFOV = 117
+#     vel_max = 3 # [m/s]
 
-    img = Base_img 
-    img_H,img_W,__ = img.shape
+#     img = Base_img 
+#     img_H,img_W,__ = img.shape
 
-    margin_W = 150
-    margin_H = 50
+#     margin_W = 150
+#     margin_H = 50
 
-    # Window init
-    window = np.ones((img_H+2*margin_H,img_W+2*margin_W,3), dtype=np.uint8)*255
-    window[margin_H:margin_H+img_H, margin_W:margin_W+img_W] = img[:,:,:]
-    window_H,window_W,__ = window.shape
+#     # Window init
+#     window = np.ones((img_H+2*margin_H,img_W+2*margin_W,3), dtype=np.uint8)*255
+#     window[margin_H:margin_H+img_H, margin_W:margin_W+img_W] = img[:,:,:]
+#     window_H,window_W,__ = window.shape
 
-    cv2.imshow("test1",window)
+#     cv2.imshow("test1",window)
 
-    # Yaw UI
-    yaw_pivot_w = 3
-    yaw_pivot_h = 30
-    yaw_pivot_c = int(window_H//1.5)
-    yaw_stick = int(img_W//2 * vel3 / 180)
-    if vel3>0:
-        window[yaw_pivot_c-yaw_pivot_h:yaw_pivot_c+yaw_pivot_h, window_W//2:window_W//2+yaw_stick] = [0,0,255]
-    else:
-        window[yaw_pivot_c-yaw_pivot_h:yaw_pivot_c+yaw_pivot_h, window_W//2+yaw_stick:window_W//2] = [0,0,255]
-    window[yaw_pivot_c-yaw_pivot_h:yaw_pivot_c+yaw_pivot_h, window_W//2-yaw_pivot_w:window_W//2+yaw_pivot_w] = [255,0,0]
+#     # Yaw UI
+#     yaw_pivot_w = 3
+#     yaw_pivot_h = 30
+#     yaw_pivot_c = int(window_H//1.5)
+#     yaw_stick = int(img_W//2 * vel3 / 180)
+#     if vel3>0:
+#         window[yaw_pivot_c-yaw_pivot_h:yaw_pivot_c+yaw_pivot_h, window_W//2:window_W//2+yaw_stick] = [0,0,255]
+#     else:
+#         window[yaw_pivot_c-yaw_pivot_h:yaw_pivot_c+yaw_pivot_h, window_W//2+yaw_stick:window_W//2] = [0,0,255]
+#     window[yaw_pivot_c-yaw_pivot_h:yaw_pivot_c+yaw_pivot_h, window_W//2-yaw_pivot_w:window_W//2+yaw_pivot_w] = [255,0,0]
 
-    # Vel1 UI
-    vel1_graph_w = 50
-    vel1_graph_h = img_H//2
-    vel1_graph_pos_w = margin_W//2
-    vel1_graph_pos_h = window_H//2
-    vel1_graph_stick = int(img_H*vel1/3)
-    window[img_H+margin_H-vel1_graph_stick:img_H+margin_H,vel1_graph_pos_w-vel1_graph_w:vel1_graph_pos_w+vel1_graph_w] = [0,255,0]
-    window = cv2.rectangle(window,(vel1_graph_pos_w-vel1_graph_w, vel1_graph_pos_h-vel1_graph_h), (vel1_graph_pos_w+vel1_graph_w, vel1_graph_pos_h+vel1_graph_h), (0,0,0), 2)
+#     # Vel1 UI
+#     vel1_graph_w = 50
+#     vel1_graph_h = img_H//2
+#     vel1_graph_pos_w = margin_W//2
+#     vel1_graph_pos_h = window_H//2
+#     vel1_graph_stick = int(img_H*vel1/3)
+#     window[img_H+margin_H-vel1_graph_stick:img_H+margin_H,vel1_graph_pos_w-vel1_graph_w:vel1_graph_pos_w+vel1_graph_w] = [0,255,0]
+#     window = cv2.rectangle(window,(vel1_graph_pos_w-vel1_graph_w, vel1_graph_pos_h-vel1_graph_h), (vel1_graph_pos_w+vel1_graph_w, vel1_graph_pos_h+vel1_graph_h), (0,0,0), 2)
 
-    # Vel2 UI
-    vel1_graph_w = 50
-    vel1_graph_h = img_H//2
-    vel1_graph_pos_w = margin_W + img_W + margin_W//2
-    vel1_graph_pos_h = window_H//2
-    vel1_graph_stick = int(img_H*vel2/3)
-    if vel2>0:
-        window[vel1_graph_pos_h:vel1_graph_pos_h+vel1_graph_stick,vel1_graph_pos_w-vel1_graph_w:vel1_graph_pos_w+vel1_graph_w] = [0,255,0]
-    else:
-        window[vel1_graph_pos_h+vel1_graph_stick:vel1_graph_pos_h,vel1_graph_pos_w-vel1_graph_w:vel1_graph_pos_w+vel1_graph_w] = [0,255,0]
+#     # Vel2 UI
+#     vel1_graph_w = 50
+#     vel1_graph_h = img_H//2
+#     vel1_graph_pos_w = margin_W + img_W + margin_W//2
+#     vel1_graph_pos_h = window_H//2
+#     vel1_graph_stick = int(img_H*vel2/3)
+#     if vel2>0:
+#         window[vel1_graph_pos_h:vel1_graph_pos_h+vel1_graph_stick,vel1_graph_pos_w-vel1_graph_w:vel1_graph_pos_w+vel1_graph_w] = [0,255,0]
+#     else:
+#         window[vel1_graph_pos_h+vel1_graph_stick:vel1_graph_pos_h,vel1_graph_pos_w-vel1_graph_w:vel1_graph_pos_w+vel1_graph_w] = [0,255,0]
 
-    window = cv2.rectangle(window,(vel1_graph_pos_w-vel1_graph_w, vel1_graph_pos_h-vel1_graph_h), (vel1_graph_pos_w+vel1_graph_w, vel1_graph_pos_h+vel1_graph_h), (0,0,0), 2)
+#     window = cv2.rectangle(window,(vel1_graph_pos_w-vel1_graph_w, vel1_graph_pos_h-vel1_graph_h), (vel1_graph_pos_w+vel1_graph_w, vel1_graph_pos_h+vel1_graph_h), (0,0,0), 2)
 
-    cv2.imshow('Navigation',window)
-    cv2.waitKey(0)
+#     cv2.imshow('Navigation',window)
+#     cv2.waitKey(0)
 	
-    print(vel1, vel2, vel3)
+#     print(vel1, vel2, vel3)

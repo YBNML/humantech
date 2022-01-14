@@ -5,7 +5,7 @@ class parameter:
         # gazebo = 0
         # realsense L515 = 1
         # realsense D435i = 2
-        opt = 1
+        opt = 0
         
         # Gazebo's rotors
         if opt == 0:

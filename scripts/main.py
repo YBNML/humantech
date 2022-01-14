@@ -54,11 +54,11 @@ class HumanTech():
     # Input image(RGB & GT)
     def input_data(self):
         print("\n\n")
-        # self.left_RGB, self.right_RGB   = self.input.ROS_RGB()
-        # self.left_GT, self.right_GT     = self.input.ROS_GT()
+        self.left_RGB, self.right_RGB   = self.input.ROS_RGB()
+        self.left_GT, self.right_GT     = self.input.ROS_GT()
         
-        self.left_RGB, self.right_RGB   = self.input.test_RGB()
-        self.left_GT, self.right_GT     = self.input.test_GT()
+        # self.left_RGB, self.right_RGB   = self.input.test_RGB()
+        # self.left_GT, self.right_GT     = self.input.test_GT()
     
     
     # Monocular Depth Estimation 
@@ -117,8 +117,8 @@ class HumanTech():
     def scaling(self):
         print('Starting Scaling computation...')
         st = t.time()
-        self.scaled_left_MDE = self.left_MDE * self.left_scaling_factor
-        self.scaled_right_MDE = self.right_MDE * self.right_scaling_factor
+        self.scaled_left_MDE = self.rect_left_MDE * self.left_scaling_factor
+        self.scaled_right_MDE = self.rect_right_MDE * self.right_scaling_factor
         print("\tScaling Factor : " + str(self.left_scaling_factor) + "  " + str(self.right_scaling_factor))
         et = t.time()
         print('\tScaling execution time \t\t\t\t= {:.3f}s'.format(et-st))
@@ -130,8 +130,8 @@ class HumanTech():
         # Crop
         self.merge_rect_left_RGB = self.rect_left_RGB[105:375,:320]
         self.merge_rect_right_RGB = self.rect_right_RGB[105:375,320:]
-        self.merge_rect_left_MDE = self.rect_left_MDE[105:375,:320]
-        self.merge_rect_right_MDE = self.rect_right_MDE[105:375,320:]
+        self.merge_rect_left_MDE = self.scaled_left_MDE[105:375,:320]
+        self.merge_rect_right_MDE = self.scaled_right_MDE[105:375,320:]
         self.merge_left_stereo_depth = self.left_stereo_depth[105:375,:320]
         self.merge_right_stereo_depth = self.right_stereo_depth[105:375,320:]
         # Superpixel
@@ -166,7 +166,7 @@ class HumanTech():
         
         # Opencv Display
         if display_opt == 0:    
-            RGB_viz = np.hstack((self.rect_left_RGB,self.rect_right_RGB))
+            RGB_viz = np.hstack((self.merge_rect_left_RGB,self.merge_rect_right_RGB))
             cv2.imshow("1. RGB_viz", RGB_viz)
         
             # __, left_GT_viz = DISPLAY(self.left_GT)
@@ -246,6 +246,19 @@ class HumanTech():
             
             plt.show()
             
+            
+            plt.subplot(2,2,1)
+            plt.imshow(self.merge_rect_left_RGB,)
+            plt.subplot(2,2,2)
+            plt.imshow(self.merge_rect_right_RGB)
+            plt.subplot(2,2,3)
+            plt.imshow(self.merge_rect_left_MDE)
+            plt.subplot(2,2,4)
+            plt.imshow(self.merge_rect_right_MDE)
+            
+            plt.show()
+            
+            
     def evaluation(self):
         
         e1 = evaluate(self.left_GT, self.left_MDE)
@@ -289,8 +302,8 @@ if __name__ == '__main__':
             '''
             "Navigation Part"
             '''
-            # ht.navi_preprocessing()
-            # ht.navigation()
+            ht.navi_preprocessing()
+            ht.navigation()
             
             # Gazebo drone control
             # ht.drone_ctrl()
@@ -298,12 +311,12 @@ if __name__ == '__main__':
             '''
             "Display"
             '''
-            ht.display()
+            # ht.display()
             
             '''
             "Evaluation"
             '''
-            ht.evaluation()
+            # ht.evaluation()
             
             
     except rospy.ROSInterruptException:
