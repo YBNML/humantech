@@ -29,7 +29,7 @@ class Drone_CTRL():
         self.current_x = 0
         self.current_y = 0
         self.current_z = 1
-        self.velocity = 0.5
+        self.velocity = 0.2
         self.desired_yaw = 0
         
         self.pub_flag = False
@@ -53,13 +53,15 @@ class Drone_CTRL():
         if self.pub_flag:
             self.header.stamp = rospy.Time()
             self.msg.header = self.header
-            print(+self.current_yaw + self.desired_yaw)
-            self.quaternion = tf.transformations.quaternion_from_euler(0,0,self.current_yaw - self.desired_yaw)
+            
+            self.quaternion = tf.transformations.quaternion_from_euler(0,0,self.current_yaw)
             transforms = Transform(translation=Point(self.current_x,self.current_y,1.2), 
                                    rotation=Quaternion(self.quaternion[0],self.quaternion[1],self.quaternion[2],self.quaternion[3]))
 
             self.velocities.linear.x = self.velocity*math.cos(self.current_yaw)
             self.velocities.linear.y = self.velocity*math.sin(self.current_yaw)
+            self.velocities.angular.z = self.desired_yaw
+            
 
             p = MultiDOFJointTrajectoryPoint([transforms], [self.velocities], [self.accelerations], rospy.Time(rospy.get_time()))
             self.msg.points.append(p) 
@@ -68,9 +70,11 @@ class Drone_CTRL():
             self.msg.points.clear()
         
     def update_desired(self, yaw, thrust):
-        yaw = -1 * yaw * math.pi / 180      # degree to radian
+        yaw = 1 * yaw * math.pi / 180      # degree to radian
         self.desired_yaw = yaw
         self.desired_thrust = thrust
+        
+        print(self.desired_yaw)
         
         self.pub_flag = True
         

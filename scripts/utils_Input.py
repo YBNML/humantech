@@ -14,8 +14,8 @@ Dataset_WS = FILE.parents[0]
 # Global Variable
 left_color  = np.zeros((480,640,3), dtype=np.uint8)
 right_color = np.zeros((480,640,3), dtype=np.uint8)
-left_depth  = np.zeros((480,640), dtype=np.float64)
-right_depth = np.zeros((480,640), dtype=np.float64)
+left_depth  = np.zeros((480,640), dtype=np.float32)
+right_depth = np.zeros((480,640), dtype=np.float32)
 
 # Subscribe topic(RGB iamge) 
 def callback_left_Color(data):

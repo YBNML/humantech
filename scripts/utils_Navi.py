@@ -37,8 +37,8 @@ obstacleDistanceGainHorz = obstacleDistanceGainHorzNormal  # Default value
 # fov = 82
 hfov = 112
 vfov = 50
-angularRangeHorz = (hfov)*math.pi/180;
-angularRangeVert = (vfov)*math.pi/180;
+angularRangeHorz = (hfov/2)*math.pi/180;
+angularRangeVert = (vfov/2)*math.pi/180;
 
 # 일단 수평에 대해서만 고려를 할거라 생략
 # lambdaObstacleVert = 5
@@ -173,13 +173,11 @@ def avoidObstacle(seg_center) :
         Horz_fObstacleTotal += Horz_obstacleBearing * Horz_bearingExponent * distanceExponent * seg_center[i,4]
         Vert_fObstacleTotal += Vert_obstacleBearing * Vert_bearingExponent * distanceExponent
         
-        # print(Horz_obstacleBearing * Horz_bearingExponent * distanceExponent * (image_width/L)
+        print(Horz_obstacleBearing, Horz_bearingExponent, distanceExponent, Horz_obstacleBearing * Horz_bearingExponent * distanceExponent)
         
     # 단위는 degree
-    yaw = Horz_fObstacleTotal * lambdaObstacleHorz / 275
+    yaw = Horz_fObstacleTotal * lambdaObstacleHorz / 275 / 2
     Thrust = Vert_fObstacleTotal * lambdaObstacleVert
-    
-    # print(yaw)
     
     return yaw, Thrust
 
@@ -246,3 +244,48 @@ def sumBehavioursHorz(angVelAvoidHorz, angVelFollowGoal):
 #     cv2.waitKey(0)
 	
 #     print(vel1, vel2, vel3)
+
+
+class Navigation:
+    def __init__(self):
+        # Goal = goto
+        # Obstacle = avoid
+        self.lambdaGoalHorz = 0.5;                   # Linear multiplier for the angular velocity
+        self.lambdaObstacleHorzNormal = 5;           # 장애물 noraml??, 장애물 인지 계수
+        self.lambdaObstacleHorzAggressive = 50;      # 장애물 aggressive??, 장애물 인지 계수
+        self.lambdaObstacleHorz = self.lambdaObstacleHorzNormal # Default value
+        
+        self.lambdaObstacleVert = 5
+        
+        # w, 3페이지에 4번 수식 참고
+        self.weightGoalHorz = 0.3
+        self.weightObstacleHorz = 0.7
+        
+        # gain 설정
+        self.obstacleDistanceGainHorzNormal = 0.1            # Smaller = more sensitive 
+        self.obstacleDistanceGainHorzAggressive = 0.005      # Smaller = more sensitive
+        self.obstacleDistanceGainHorz = self.obstacleDistanceGainHorzNormal  # Default value
+        
+        hfov = 82
+        vfov = 50
+        self.angularRangeHorz = (hfov)*math.pi/180;
+        self.angularRangeVert = (vfov)*math.pi/180;
+        
+    def avoidObstacle(self, depth_image):
+        depth = depth_image[135,:]
+        Horz_fObstacleTotal = 0
+        Vert_fObstacleTotal = 0
+        
+        for i in range(640):
+            Horz_obstacleBearing = (hfov*i/640) - (hfov/2) + (hfov/2/640)
+            Horz_obstacleBearing = Horz_obstacleBearing * math.pi / 180
+            
+            Horz_bearingExponent = np.exp(-pow(Horz_obstacleBearing,2)/(2*pow(self.angularRangeHorz,2)))
+            
+            distanceExponent = np.exp(-self.obstacleDistanceGainHorz * depth[i]) 
+            
+            Horz_fObstacleTotal += Horz_obstacleBearing * Horz_bearingExponent * distanceExponent
+        
+        Horz_fObstacleTotal *= self.lambdaObstacleHorz
+        
+        return Horz_fObstacleTotal/5

@@ -17,7 +17,7 @@ from utils_Rectification import Rectification
 from utils_SGBM import SGBM
 
 
-from utils_Navi import avoidObstacle, display_navi
+from utils_Navigation import avoidObstacle
 
 
 from utils_SuperPixel import SuperPixelSampler

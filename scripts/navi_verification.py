@@ -16,7 +16,7 @@ from utils_Parameter import parameter
 from utils_Input import Image_load
 from utils_Rotation import rotate_data          # function
 from utils_Rectification import Rectification
-from utils_Navi import avoidObstacle
+from utils_Navi import Navigation, avoidObstacle
 
 from utils_ZNCC import zncc_left, zncc_right
 import utils_stereo_matching as sm
@@ -33,13 +33,6 @@ main.py 알고리즘 구조를 그대로 사용한 것
 class HumanTech():
     # class declaration
     def __init__(self):
-        # Load init setting data
-        self.param  = parameter()
-        self.D = self.param.get_D()     # Max disparity
-        self.R = self.param.get_R()     # Size of window to consider around the scan line point
-        self.BL = self.param.get_BL()
-        self.F = self.param.get_f()
-        
         # Load input data from gazabo
         self.input = Image_load()
         # Adabins
@@ -54,6 +47,8 @@ class HumanTech():
         self.drone = Drone_CTRL()
         
         self.previous_yaw = 0
+        
+        self.navi = Navigation()
 
 
     # Input image(RGB & GT)
@@ -64,14 +59,14 @@ class HumanTech():
         
         self.left_GT    = self.left_GT.reshape((480,640))
         self.right_GT   = self.right_GT.reshape((480,640))
-        self.left_GT    = np.nan_to_num(self.left_GT, copy=True)
-        self.right_GT   = np.nan_to_num(self.right_GT, copy=True)
         
         
     # Rotation as preprocessing of rectification
     def rotation(self):
         print('Starting Rotation computation...')
         st = t.time()
+        self.left_GT = np.array(self.left_GT, dtype=np.float64)
+        self.right_GT = np.array(self.right_GT, dtype=np.float64)
         self.rect_left_GT, self.rect_right_GT = rotate_data(self.left_GT, self.right_GT)
         et = t.time()
         print("\tRotation execution time \t\t\t= {:.3f}s".format(et-st))
@@ -111,14 +106,18 @@ class HumanTech():
         et = t.time()
         print('\tNavi\'s Preprocessing execution time \t\t= {:.3f}s'.format(et-st))
         
+        # view = np.hstack((self.merge_rect_left_GT, self.merge_rect_right_GT))
+        # plt.imshow(view)
+        # plt.show()
     
     # Drone Navigation in 3D-space
     def navigation(self):
         print('Starting Navigation computation...')
         st = t.time()
-        self.yaw, self.thrust = avoidObstacle(self.seg_center)
-        # self.yaw = 0.3*self.previous_yaw + 0.7*self.yaw + 0.5
-        # self.previous_yaw = self.yaw
+        view = np.hstack((self.merge_rect_left_GT, self.merge_rect_right_GT))
+        self.yaw = self.navi.avoidObstacle(view)
+        self.thrust = 0
+        # self.yaw, self.thrust = avoidObstacle(self.seg_center)
         et = t.time()
         # print(self.yaw)
         print('\tNavigation execution time \t\t\t= {:.3f}s'.format(et-st))
