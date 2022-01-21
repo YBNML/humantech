@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
 '''
-For the 28th Samsung Human Tech
+< 00_our_Navi.py >
+1. Monocular Depth Estimation 사용
+2. Our Navigation (양안 이미지 기반으로 네비게이션)
 '''
 
 import rospy
@@ -16,28 +18,30 @@ from utils_Rotation import rotate_data          # function
 from utils_Rectification import Rectification
 from utils_SGBM import SGBM
 
-
-from utils_Navigation import avoidObstacle
-
+from utils_Navigation import Navigation
 
 from utils_SuperPixel import SuperPixelSampler
-from utils_Link import Link_Adabins
+from utils_Link import Link_Adabins, Link_DenseDepth
 from utils_Display import DISPLAY
 from utils_Drone import Drone_CTRL
+
 # Evaluation
 from utils_Eval import evaluate
 
-'''
-1. MDE's depth data scaling with StereoMatching 
-2. Navigation with depth image
-'''
+
 class HumanTech():
     # class declaration
     def __init__(self):
         # Load input data from gazabo
         self.input = Image_load()
-        # Adabins
-        self.adabins = Link_Adabins()
+        
+        # Monocular Depth Estimation
+        self.MDE_opt = 1     # Adabins:0, DenseDepth:1
+        if self.MDE_opt==0:
+            self.adabins = Link_Adabins()
+        if self.MDE_opt == 1:
+            self.densedepth = Link_DenseDepth()
+        
         # Rectification
         self.rect = Rectification()
         
@@ -49,6 +53,8 @@ class HumanTech():
         
         # Drone Ctrl
         self.drone = Drone_CTRL()
+        
+        self.navi = Navigation()
 
 
     # Input image(RGB & GT)
@@ -67,8 +73,13 @@ class HumanTech():
         st = t.time()
         left_mde_input  = self.left_RGB.copy()
         right_mde_input = self.right_RGB.copy()
-        self.left_MDE   = self.adabins.predict(left_mde_input)
-        self.right_MDE  = self.adabins.predict(right_mde_input)
+        if self.MDE_opt==0:
+            self.left_MDE   = self.adabins.predict(left_mde_input)
+            self.right_MDE  = self.adabins.predict(right_mde_input)
+        if self.MDE_opt==1:
+            self.left_MDE   = self.densedepth.predict(left_mde_input)
+            self.right_MDE  = self.densedepth.predict(right_mde_input)
+            print(self.right_MDE.shape)
         et = t.time()
         print("\tMonocular_Depth_Estimation execution time \t= {:.3f}s".format(et-st))
         
@@ -117,6 +128,13 @@ class HumanTech():
     def scaling(self):
         print('Starting Scaling computation...')
         st = t.time()
+        if np.min(self.crop_rect_left_MDE[:,200:500])<0.8 or np.min(self.crop_rect_right_MDE[:,140:440])<0.8:
+            self.left_scaling_factor=1
+            self.right_scaling_factor=1
+            print("@@@")
+        print("\t", np.min(self.crop_rect_left_MDE[:,200:500]), np.min(self.crop_rect_right_MDE[:,140:440]))
+            
+            
         self.scaled_left_MDE = self.rect_left_MDE * self.left_scaling_factor
         self.scaled_right_MDE = self.rect_right_MDE * self.right_scaling_factor
         print("\tScaling Factor : " + str(self.left_scaling_factor) + "  " + str(self.right_scaling_factor))
@@ -138,8 +156,6 @@ class HumanTech():
         self.left_seg_center, __ = self.sp.superPixel(self.merge_rect_left_RGB, self.merge_left_stereo_depth, self.merge_rect_left_MDE)
         self.right_seg_center, __ = self.sp.superPixel(self.merge_rect_right_RGB, self.merge_right_stereo_depth, self.merge_rect_right_MDE)
         self.right_seg_center[:,0] = self.right_seg_center[:,0] + 320
-        # Merge 2 seg_center
-        self.seg_center = np.concatenate((self.left_seg_center,self.right_seg_center), axis=0)
         et = t.time()
         print('\tNavi\'s Preprocessing execution time \t\t= {:.3f}s'.format(et-st))    
     
@@ -147,14 +163,17 @@ class HumanTech():
     def navigation(self):
         print('Starting Navigation computation...')
         st = t.time()
-        self.yaw, self.thrust = avoidObstacle(self.seg_center)
+        self.left_angular_velocity, self.thrust = self.navi.avoidObstacle2(self.left_seg_center)
+        self.right_angular_velocity, self.thrust = self.navi.avoidObstacle2(self.right_seg_center)
+        self.angular_velocity = self.left_angular_velocity + self.right_angular_velocity
+        print(self.left_angular_velocity, self.right_angular_velocity)
         et = t.time()
         print('\tNavigation execution time \t\t\t= {:.3f}s'.format(et-st))
     
     def drone_ctrl(self):
         print('Starting Drone_Control computation...')
         st = t.time()
-        self.drone.update_desired(self.yaw, self.thrust)
+        self.drone.update_desired(self.angular_velocity, self.thrust)
         et = t.time()
         print('\tDrone_Command execution time \t\t\t= {:.3f}s'.format(et-st))
         
@@ -162,30 +181,25 @@ class HumanTech():
     def display(self):
         # Opencv Display : 0
         # Matplotlib Display : 1
-        display_opt = 1
+        display_opt = 0
         
         # Opencv Display
         if display_opt == 0:    
-            RGB_viz = np.hstack((self.merge_rect_left_RGB,self.merge_rect_right_RGB))
-            cv2.imshow("1. RGB_viz", RGB_viz)
-        
-            # __, left_GT_viz = DISPLAY(self.left_GT)
-            # __, right_GT_viz = DISPLAY(self.right_GT)
-            # GT_viz = np.hstack((left_GT_viz,right_GT_viz))
-            # cv2.imshow("2. Depth_viz", GT_viz)
+            # RGB_viz = np.hstack((self.merge_rect_left_RGB,self.merge_rect_right_RGB))
+            
+            # __, left_MDE_viz = DISPLAY(self.merge_rect_left_MDE)
+            # __, right_MDE_viz = DISPLAY(self.merge_rect_right_MDE)
+            # MDE_viz = np.hstack((left_MDE_viz, right_MDE_viz))
+            
+            # cv2.imshow("1. RGB_viz", MDE_viz)
+            # cv2.waitKey(10)
+            
+            
+            MDE_viz = np.hstack((self.merge_rect_left_MDE, self.merge_rect_right_MDE))
+            plt.imshow(MDE_viz)
+            plt.show()            
+            
 
-            # __, left_MDE_viz = DISPLAY(self.left_MDE)
-            # __, right_MDE_viz = DISPLAY(self.right_MDE)
-            # MDE_viz = np.hstack((left_MDE_viz,right_MDE_viz))
-            # cv2.imshow("3. MDE_viz", MDE_viz)
-
-
-            # __, left_stereo_depth_viz = DISPLAY(self.left_stereo_depth)
-            # __, right_stereo_depth_viz = DISPLAY(self.right_stereo_depth)
-            # stereo_depth_viz = np.hstack((left_stereo_depth_viz,right_stereo_depth_viz))
-            # cv2.imshow("4. SDE_viz", stereo_depth_viz)
-
-            cv2.waitKey(10)
         
         # Matplotlib Display  
         if display_opt == 1:
@@ -304,9 +318,7 @@ if __name__ == '__main__':
             '''
             ht.navi_preprocessing()
             ht.navigation()
-            
-            # Gazebo drone control
-            # ht.drone_ctrl()
+            ht.drone_ctrl()
             
             '''
             "Display"

@@ -106,16 +106,11 @@ class SGBM:
                                                 speckleRange = 32)
         self.right_matcher = cv2.ximgproc.createRightMatcher(self.left_matcher)
         
-        
-        st = t.time()
         self.gray_crop_left_RGB     = self.gray_crop_left_RGB.astype(np.uint8)
         self.gray_crop_right_RGB    = self.gray_crop_right_RGB.astype(np.uint8)
-        print(t.time()-st)
         
-        st = t.time()
         self.left_disp   = self.left_matcher.compute(self.gray_crop_left_RGB, self.gray_crop_right_RGB)
         self.right_disp  = self.right_matcher.compute(self.gray_crop_right_RGB, self.gray_crop_left_RGB)
-        print(t.time()-st)
 
         self.left_disp = self.left_disp.astype(np.float32) / 16
         self.right_disp = self.right_disp.astype(np.float32) / 16
