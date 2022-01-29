@@ -100,20 +100,46 @@ class HumanTech():
     def navigation(self):
         print('Starting Navigation computation...')
         st = t.time()
-        self.left_angular_velocity, self.left_thrust = self.navi.avoidObstacle2(self.left_seg_center)
-        self.right_angular_velocity, self.right_thrust = self.navi.avoidObstacle2(self.right_seg_center)
+        self.left_angular_velocity, self.left_thrust, self.left_forward_speed = self.navi.avoidObstacle2(self.left_seg_center)
+        self.right_angular_velocity, self.right_thrust,  self.right_forward_speed = self.navi.avoidObstacle2(self.right_seg_center)
+        
         self.angular_velocity = self.left_angular_velocity + self.right_angular_velocity
         self.thrust = self.left_thrust + self.right_thrust
+        
+        if self.left_forward_speed >= self.right_forward_speed:
+            self.forward_speed = self.right_forward_speed
+        if self.left_forward_speed < self.right_forward_speed:
+            self.forward_speed = self.left_forward_speed
+        
+        print("\t", self.angular_velocity)
+        print("\t", self.thrust)
+        print("\t", self.forward_speed)
         et = t.time()
         # print(self.yaw)
         print('\tNavigation execution time \t\t\t= {:.3f}s'.format(et-st))
     
+    
+    
     def drone_ctrl(self):
         print('Starting Drone_Control computation...')
         st = t.time()
-        self.drone.update_desired(self.angular_velocity, self.thrust)
+        self.drone.update_ours(self.angular_velocity, self.thrust, self.forward_speed)
         et = t.time()
         print('\tDrone_Command execution time \t\t\t= {:.3f}s'.format(et-st))
+        
+    def trajectory(self):
+        print('Starting Trajectory_save computation...')
+        st = t.time()
+        self.drone.trajectory()
+        et = t.time()
+        print('\tTrajectory_save execution time \t\t\t= {:.3f}s'.format(et-st))
+      
+    def trajectory_save(self):
+        print('Starting Trajectory_save computation...')
+        st = t.time()
+        self.drone.trajectory_save()
+        et = t.time()
+        print('\tTrajectory_save execution time \t\t\t= {:.3f}s'.format(et-st))
         
     def drone_display(self):
         # self.merge_rect_left_GT_viz = DISPLAY(self.merge_rect_left_GT)
@@ -127,9 +153,8 @@ class HumanTech():
         
     
 if __name__ == '__main__':
-    try:
-        ht = HumanTech()
-           
+    ht = HumanTech()
+    try:   
         while not rospy.is_shutdown():
             # "Common Part"
             ht.input_data()
@@ -142,10 +167,12 @@ if __name__ == '__main__':
             # Gazebo drone control Part
             ht.drone_ctrl()
             
-            ht.drone_display()
+            ht.trajectory()
+            # ht.drone_display()
             
             
     except rospy.ROSInterruptException:
         pass
     finally:
+        ht.trajectory_save()
         print("\n\n// END //\n")

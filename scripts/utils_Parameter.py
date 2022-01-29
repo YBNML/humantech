@@ -5,7 +5,7 @@ class parameter:
         # gazebo = 0
         # realsense L515 = 1
         # realsense D435i = 2
-        opt = 0
+        opt = 1
         
         # Gazebo's rotors
         if opt == 0:
@@ -27,13 +27,13 @@ class parameter:
         # Realsense L515
         if opt == 1:
             # camera parameter
-            self.px = 646.329
-            self.py = 356.985
-            self.fx = 914.874
-            self.fy = 914.849
+            self.px = 328.741
+            self.py = 235.728
+            self.fx = 601.439
+            self.fy = 601.622
             # Image Size
-            self.img_width = 1280
-            self.img_height = 720
+            self.img_width = 640
+            self.img_height = 480
             # Max disparity
             self.D = 128
             # Size of window to consider around the scan line point

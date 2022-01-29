@@ -82,7 +82,7 @@ class Navigation:
             Horz_bearingExponent = np.exp(-1*pow(Horz_obstacleBearing,2)/(2*pow(self.angularRangeHorz,2)))
             Vert_bearingExponent = np.exp(-1*pow(Vert_obstacleBearing,2)/(2*pow(self.angularRangeVert,2)))
 
-            distanceExponent = np.exp(-self.obstacleDistanceGainHorz * self.seg_center[i,3]) 
+            distanceExponent = np.exp(-self.obstacleDistanceGainHorz * self.seg_center[i,3]*5) 
 
             Horz_fObstacleTotal += Horz_obstacleBearing * Horz_bearingExponent * distanceExponent * self.seg_center[i,4]
             Vert_fObstacleTotal += Vert_obstacleBearing * Vert_bearingExponent * distanceExponent * self.seg_center[i,4]
@@ -91,7 +91,7 @@ class Navigation:
         angular_velocity = Horz_fObstacleTotal * self.lambdaObstacleHorz / self.image_height / 10
         Thrust = Vert_fObstacleTotal * self.lambdaObstacleVert / self.image_width / 100
     
-        return angular_velocity, Thrust
+        return angular_velocity, Thrust, 0.5
     
     
     def detectCorner(self):
@@ -105,7 +105,9 @@ class Navigation:
             
         detectCorner_pnt = detectCorner_pnt / self.image_height / self.image_width * 7
         
-        self.lambdaObstacleHorz = 1600 * pow(detectCorner_pnt,-0.964)
+        # self.lambdaObstacleHorz = 1600 * pow(detectCorner_pnt,-0.964)
+        self.lambdaObstacleHorz = 250 * pow(detectCorner_pnt,-0.6)
+        
         self.obstacleDistanceGainHorz = 0.0368 * np.log(detectCorner_pnt) - 0.125
         
             

@@ -38,9 +38,7 @@ class HumanTech():
     def input_data(self):
         print("\n\n")
         self.center_RGB = self.input.ROS_RGB2()
-        self.center_GT  = self.input.ROS_GT2()
-        
-        # self.center_GT  = self.center_GT.reshape((480,640))
+        # self.center_GT  = self.input.ROS_GT2()
         
 
     # Drone Navigation in 3D-space

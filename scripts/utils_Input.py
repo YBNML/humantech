@@ -131,24 +131,18 @@ class Image_load():
         
 
 
-
-
-
-    # def load_rgb(self):
-    #     DIR = str(ROOT) + "/dataset/rgb/"
-    #     left_rgb = cv2.imread(DIR+"left_color"+str(self.count)+".npy")
-    #     right_rgb = cv2.imread(DIR+"right_color"+str(self.count)+".npy")
-    #     return left_rgb, right_rgb
-
-    # def load_gt(self):
-    #     DIR = str(ROOT) + "/dataset/gt/"
-    #     left_gt = cv2.imread(DIR+"left_depth"+str(self.count)+".npy")
-    #     right_gt = cv2.imread(DIR+"right_depth"+str(self.count)+".npy")
-    #     return left_gt, right_gt
-
-    # def load_mde(self):
-    #     mde = "adabins"     # choose MDE model (adabins, bts, densedepth)
-    #     DIR = str(ROOT) + "/dataset/" + mde +"/"
-    #     left_mde = cv2.imread(DIR + "left_" + mde + str(self.count) + ".npy")
-    #     right_mde = cv2.imread(DIR + "right_" + mde + str(self.count) + ".npy")
-    #     return left_mde, right_mde
+class Realsense_Image():
+    def __init__(self):
+        # ROS
+        rospy.init_node('HumanTech_NODE', anonymous=True)
+        rospy.loginfo("Waiting for HumanTech_NODE")
+        
+        # Subscribe Node
+        rospy.Subscriber("/left_camera/color/image_raw", Image, callback_left_Color)
+        rospy.Subscriber("/right_camera/color/image_raw", Image, callback_right_Color)
+        
+        
+    def RS_RGB(self):
+        global left_color, right_color
+        return left_color, right_color
+        
