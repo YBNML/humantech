@@ -134,9 +134,7 @@ class Image_load():
 class Realsense_Image():
     def __init__(self):
         # ROS
-        rospy.init_node('HumanTech_NODE', anonymous=True)
-        rospy.loginfo("Waiting for HumanTech_NODE")
-        print("?")
+        rospy.init_node('IASL_KHJ', anonymous=True)
         
         # Subscribe Node
         rospy.Subscriber("/camera_left/color/image_raw", Image, callback_left_Color)
@@ -148,3 +146,9 @@ class Realsense_Image():
         return left_color, right_color
     
     
+    def test(self):
+        global left_color, right_color
+        left_color = cv2.imread("left_Color.png")
+        right_color = cv2.imread("right_Color.png")
+        return left_color, right_color
+        
