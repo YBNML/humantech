@@ -3,7 +3,8 @@
 import cv2
 import time as t
 import numpy as np
-from skimage.color import rgb2gray
+# from skimage.color import rgb2gray
+import matplotlib.pyplot as plt
 
 from utils_Parameter import parameter
 
@@ -54,11 +55,11 @@ class SGBM:
         self.l_edge_sum = np.sum(l_edge)
         self.r_edge_sum = np.sum(r_edge)
         
-        self.tempR = 3
+        self.tempR = 5
         if (self.l_edge_sum + self.r_edge_sum) > 10000:
-            self.tempR = 3
+            self.tempR = 4
         elif (self.l_edge_sum + self.r_edge_sum) < 3000:
-            self.tempR = 3
+            self.tempR = 4
             
             
     # Crop for StereoMatching's preprocessing
@@ -120,7 +121,6 @@ class SGBM:
 
         self.left_disp = self.left_disp.astype(np.float32) / 16
         self.right_disp = self.right_disp.astype(np.float32) / 16
-
         
     def get_crop(self):
         return self.crop_left_img, self.crop_right_img, self.crop_left_mde, self.crop_right_mde 

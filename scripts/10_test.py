@@ -18,6 +18,8 @@ from utils.link import Link_Adabins, Link_DenseDepth
 from utils.rectification import Rectification
 from utils.rotation import rotate_data
 from utils.SGBM import SGBM
+from utils.SuperPixel import SuperPixelSampler
+from utils.navigation import Navigation
 
 
 class IASL_KHJ():
@@ -42,6 +44,12 @@ class IASL_KHJ():
         
         # ZNCC
         self.sgbm = SGBM()
+        
+        # SuperPixel
+        self.sp = SuperPixelSampler()
+        
+        # Navigation
+        self.navi = Navigation()
         
         
     # Input image(RGB & GT)
@@ -91,8 +99,76 @@ class IASL_KHJ():
         st = t.time()
         self.left_stereo_depth, self.right_stereo_depth =  self.sgbm.stereo_depth(self.rect_left_RGB, self.rect_right_RGB, self.rect_left_MDE, self.rect_right_MDE)
         self.crop_rect_left_RGB, self.crop_rect_right_RGB, self.crop_rect_left_MDE, self.crop_rect_right_MDE = self.sgbm.get_crop()
+        # raw image size = 640x480
+        # crop image size = 640x420
         et = t.time()
         print('ZNCC&WTA :\t\t\t{:.3f}sec'.format(et-st))
+        
+    
+    # Scaling for scaling   
+    def superpixel(self):
+        st = t.time()
+        __, self.left_scaling_factor = self.sp.superPixel(self.crop_rect_left_RGB, self.left_stereo_depth, self.crop_rect_left_MDE)
+        __, self.right_scaling_factor = self.sp.superPixel(self.crop_rect_right_RGB, self.right_stereo_depth, self.crop_rect_right_MDE)
+        et = t.time()
+        print('SuperPixel :\t\t\t{:.3f}sec'.format(et-st))
+    
+    
+    # Depth scaling
+    def scaling(self):
+        print('Starting Scaling computation...')
+        st = t.time()
+        if np.min(self.crop_rect_left_MDE[:,200:500])<0.8 or np.min(self.crop_rect_right_MDE[:,140:440])<0.8:
+            self.left_scaling_factor=1
+            self.right_scaling_factor=1
+            print("@@@")
+        print("\t", np.min(self.crop_rect_left_MDE[:,200:500]), np.min(self.crop_rect_right_MDE[:,140:440]))
+            
+            
+        self.scaled_left_MDE = self.rect_left_MDE * self.left_scaling_factor
+        self.scaled_right_MDE = self.rect_right_MDE * self.right_scaling_factor
+        print("\tScaling Factor : " + str(self.left_scaling_factor) + "  " + str(self.right_scaling_factor))
+        et = t.time()
+        print('\tScaling execution time \t\t\t\t= {:.3f}s'.format(et-st))
+        
+    
+    # Preprocessing for Navigation
+    def navi_preprocessing(self):
+        print('Starting Navi\'s Preprocessing computation...')
+        st = t.time()
+        # Crop
+        self.merge_rect_left_RGB = self.rect_left_RGB[20:460,:320]
+        self.merge_rect_right_RGB = self.rect_right_RGB[20:460,320:]
+        self.merge_rect_left_MDE = self.scaled_left_MDE[20:460,:320]
+        self.merge_rect_right_MDE = self.scaled_right_MDE[20:460,320:]
+        self.merge_left_stereo_depth = self.left_stereo_depth[20:460,:320]
+        self.merge_right_stereo_depth = self.right_stereo_depth[20:460,320:]
+        # Superpixel
+        self.left_seg_center, __ = self.sp.superPixel(self.merge_rect_left_RGB, self.merge_left_stereo_depth, self.merge_rect_left_MDE)
+        self.right_seg_center, __ = self.sp.superPixel(self.merge_rect_right_RGB, self.merge_right_stereo_depth, self.merge_rect_right_MDE)
+        self.right_seg_center[:,0] = self.right_seg_center[:,0] + 320
+        et = t.time()
+        print('\tNavi\'s Preprocessing execution time \t\t= {:.3f}s'.format(et-st))    
+    
+    
+    # Drone Navigation in 3D-space
+    def navigation(self):
+        st = t.time()
+        self.left_angular_velocity, self.left_thrust, self.left_forward_speed = self.navi.avoidObstacle2(self.left_seg_center)
+        self.right_angular_velocity, self.right_thrust, self.right_forward_speed = self.navi.avoidObstacle2(self.right_seg_center)
+        
+        self.angular_velocity = self.left_angular_velocity + self.right_angular_velocity
+        self.thrust = self.left_thrust + self.right_thrust
+        
+        if self.left_forward_speed >= self.right_forward_speed:
+            self.forward_speed = self.right_forward_speed
+        if self.left_forward_speed < self.right_forward_speed:
+            self.forward_speed = self.left_forward_speed
+        
+        print(self.angular_velocity, self.thrust, self.forward_speed)
+        
+        et = t.time()
+        print('Navigation :\t\t\t{:.3f}sec'.format(et-st))
         
         
     # Display
@@ -142,6 +218,17 @@ if __name__ == '__main__':
             "Depth Scaling Part"
             '''
             iasl.stereomathcing()
+            iasl.superpixel()
+            iasl.scaling()
+            
+            
+            '''
+            "Navigation Part"
+            '''
+            iasl.navi_preprocessing()
+            iasl.navigation()
+            
+            
             
             '''
             "Display"
