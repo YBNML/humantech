@@ -9,6 +9,7 @@
 import rospy
 
 import cv2
+import math
 import time as t
 import numpy as np
 import matplotlib.pyplot as plt
@@ -33,8 +34,8 @@ class HumanTech():
     # class declaration
     def __init__(self):
         # Load input data from gazabo
-        # self.input = Image_load()
-        self.input = Realsense_Image()
+        self.input = Image_load()
+        # self.input = Realsense_Image()
         
         # Monocular Depth Estimation
         self.MDE_opt = 0     # Adabins:0, DenseDepth:1
@@ -61,8 +62,8 @@ class HumanTech():
     # Input image(RGB & GT)
     def input_data(self):
         print("\n\n")
-        # self.left_RGB, self.right_RGB   = self.input.ROS_RGB()
-        self.left_RGB, self.right_RGB   = self.input.RS_RGB()
+        self.left_RGB, self.right_RGB   = self.input.ROS_RGB()
+        # self.left_RGB, self.right_RGB   = self.input.RS_RGB()
         # plt.imshow(self.left_RGB)
         # plt.show()
         # self.left_RGB, self.right_RGB   = self.input.test_RGB()
@@ -148,18 +149,18 @@ class HumanTech():
         print('Starting Navi\'s Preprocessing computation...')
         st = t.time()
         # Crop
-        # self.merge_rect_left_RGB = self.rect_left_RGB[105:375,:320]
-        # self.merge_rect_right_RGB = self.rect_right_RGB[105:375,320:]
-        # self.merge_rect_left_MDE = self.scaled_left_MDE[105:375,:320]
-        # self.merge_rect_right_MDE = self.scaled_right_MDE[105:375,320:]
-        # self.merge_left_stereo_depth = self.left_stereo_depth[105:375,:320]
-        # self.merge_right_stereo_depth = self.right_stereo_depth[105:375,320:]
-        self.merge_rect_left_RGB = self.rect_left_RGB[20:460,:320]
-        self.merge_rect_right_RGB = self.rect_right_RGB[20:460,320:]
-        self.merge_rect_left_MDE = self.scaled_left_MDE[20:460,:320]
-        self.merge_rect_right_MDE = self.scaled_right_MDE[20:460,320:]
-        self.merge_left_stereo_depth = self.left_stereo_depth[20:460,:320]
-        self.merge_right_stereo_depth = self.right_stereo_depth[20:460,320:]
+        self.merge_rect_left_RGB = self.rect_left_RGB[105:375,:320]
+        self.merge_rect_right_RGB = self.rect_right_RGB[105:375,320:]
+        self.merge_rect_left_MDE = self.scaled_left_MDE[105:375,:320]
+        self.merge_rect_right_MDE = self.scaled_right_MDE[105:375,320:]
+        self.merge_left_stereo_depth = self.left_stereo_depth[105:375,:320]
+        self.merge_right_stereo_depth = self.right_stereo_depth[105:375,320:]
+        # self.merge_rect_left_RGB = self.rect_left_RGB[20:460,:320]
+        # self.merge_rect_right_RGB = self.rect_right_RGB[20:460,320:]
+        # self.merge_rect_left_MDE = self.scaled_left_MDE[20:460,:320]
+        # self.merge_rect_right_MDE = self.scaled_right_MDE[20:460,320:]
+        # self.merge_left_stereo_depth = self.left_stereo_depth[20:460,:320]
+        # self.merge_right_stereo_depth = self.right_stereo_depth[20:460,320:]
         # Superpixel
         self.left_seg_center, __ = self.sp.superPixel(self.merge_rect_left_RGB, self.merge_left_stereo_depth, self.merge_rect_left_MDE)
         self.right_seg_center, __ = self.sp.superPixel(self.merge_rect_right_RGB, self.merge_right_stereo_depth, self.merge_rect_right_MDE)
@@ -182,7 +183,9 @@ class HumanTech():
         if self.left_forward_speed < self.right_forward_speed:
             self.forward_speed = self.left_forward_speed
         
-        print(self.angular_velocity, self.thrust, self.forward_speed)
+        if math.isnan(self.angular_velocity) == True:
+            self.angular_velocity=0
+            self.thrust = 0
         
         et = t.time()
         print('\tNavigation execution time \t\t\t= {:.3f}s'.format(et-st))
@@ -190,7 +193,7 @@ class HumanTech():
     def drone_ctrl(self):
         print('Starting Drone_Control computation...')
         st = t.time()
-        self.drone.update_ours(self.angular_velocity, self.thrust)
+        self.drone.update_ours(self.angular_velocity, self.thrust, self.forward_speed)
         et = t.time()
         print('\tDrone_Command execution time \t\t\t= {:.3f}s'.format(et-st))
         
@@ -212,10 +215,10 @@ class HumanTech():
             # cv2.waitKey(10)
             
             
-            MDE_viz = np.hstack((self.merge_rect_left_MDE, self.merge_rect_right_MDE))
-            plt.imshow(MDE_viz)
-            plt.show()            
-            
+            MDE_viz = np.hstack((self.merge_rect_left_RGB, self.merge_rect_right_RGB))
+            cv2.imshow("view",MDE_viz)
+            # plt.show()            
+            cv2.waitKey(10)
 
         
         # Matplotlib Display  
@@ -335,14 +338,14 @@ if __name__ == '__main__':
             '''
             "Navigation Part"
             '''
-            # ht.navi_preprocessing()
-            # ht.navigation()
-            # ht.drone_ctrl()
+            ht.navi_preprocessing()
+            ht.navigation()
+            ht.drone_ctrl()
             
             '''
             "Display"
             '''
-            # ht.display()
+            ht.display()
             
             '''
             "Evaluation"

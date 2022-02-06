@@ -105,11 +105,13 @@ class Navigation:
             
         detectCorner_pnt = detectCorner_pnt / self.image_height / self.image_width * 7
         
-        # self.lambdaObstacleHorz = 1600 * pow(detectCorner_pnt,-0.964)
-        self.lambdaObstacleHorz = 250 * pow(detectCorner_pnt,-0.6)
+        if (detectCorner_pnt is not None):
+            # self.lambdaObstacleHorz = 1600 * pow(detectCorner_pnt,-0.964)
+            self.lambdaObstacleHorz = 250 * pow(detectCorner_pnt,-0.6)
+            self.obstacleDistanceGainHorz = 0.0368 * np.log(detectCorner_pnt) - 0.125
         
-        self.obstacleDistanceGainHorz = 0.0368 * np.log(detectCorner_pnt) - 0.125
-        
-            
+            # self.lambdaObstacleHorz = 30000 * pow(detectCorner_pnt,-1.6)
+            # self.obstacleDistanceGainHorz = 0.0368 * np.log(detectCorner_pnt) - 0.125
+            self.obstacleDistanceGainHorz = np.clip(self.obstacleDistanceGainHorz,0,10)
         
         

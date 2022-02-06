@@ -65,16 +65,16 @@ class SGBM:
     def crop(self):
         # In 640x480 case
         if self.left_img.shape[0]==480 and self.left_img.shape[1]==640:
-            # self.numDisparities = 140
-            # self.crop_left_img      = self.left_img[40:440,:]
-            # self.crop_right_img     = self.right_img[40:440,:]
-            # self.crop_left_mde      = self.left_mde[40:440,:]
-            # self.crop_right_mde     = self.right_mde[40:440,:]
-            self.numDisparities = 180
-            self.crop_left_img      = self.left_img[30:450,:]
-            self.crop_right_img     = self.right_img[30:450,:]
-            self.crop_left_mde      = self.left_mde[30:450,:]
-            self.crop_right_mde     = self.right_mde[30:450,:]
+            self.numDisparities = 140
+            self.crop_left_img      = self.left_img[40:440,:]
+            self.crop_right_img     = self.right_img[40:440,:]
+            self.crop_left_mde      = self.left_mde[40:440,:]
+            self.crop_right_mde     = self.right_mde[40:440,:]
+            # self.numDisparities = 180
+            # self.crop_left_img      = self.left_img[30:450,:]
+            # self.crop_right_img     = self.right_img[30:450,:]
+            # self.crop_left_mde      = self.left_mde[30:450,:]
+            # self.crop_right_mde     = self.right_mde[30:450,:]
             
         # In 1280x720 case
         if self.left_img.shape[0]==720 and self.left_img.shape[1]==1280:

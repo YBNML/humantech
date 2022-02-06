@@ -9,6 +9,7 @@
 import rospy
 
 import cv2
+import math
 import time as t
 import numpy as np
 import matplotlib.pyplot as plt
@@ -63,9 +64,6 @@ class HumanTech():
         et = t.time()
         print("\tRotation execution time \t\t\t= {:.3f}s".format(et-st))
         
-        # GT
-        # self.rect_left_GT, self.rect_right_GT = rotate_data(self.left_GT, self.right_GT)
-        
         
     # Rectification
     def rectification(self):
@@ -111,9 +109,9 @@ class HumanTech():
         if self.left_forward_speed < self.right_forward_speed:
             self.forward_speed = self.left_forward_speed
         
-        print("\t", self.angular_velocity)
-        print("\t", self.thrust)
-        print("\t", self.forward_speed)
+        if math.isnan(self.angular_velocity) == True:
+            self.angular_velocity=0
+            self.thrust = 0
         et = t.time()
         # print(self.yaw)
         print('\tNavigation execution time \t\t\t= {:.3f}s'.format(et-st))
@@ -168,7 +166,7 @@ if __name__ == '__main__':
             ht.drone_ctrl()
             
             ht.trajectory()
-            # ht.drone_display()
+            ht.drone_display()
             
             
     except rospy.ROSInterruptException:
