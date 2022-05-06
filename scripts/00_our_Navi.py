@@ -190,10 +190,27 @@ class HumanTech():
         et = t.time()
         print('\tNavigation execution time \t\t\t= {:.3f}s'.format(et-st))
     
+    
+    def trajectory(self):
+        print('Starting Trajectory_save computation...')
+        st = t.time()
+        self.drone.trajectory()
+        et = t.time()
+        print('\tTrajectory_save execution time \t\t\t= {:.3f}s'.format(et-st))
+      
+    def trajectory_save(self):
+        print('Starting Trajectory_save computation...')
+        st = t.time()
+        self.drone.trajectory_save()
+        et = t.time()
+        print('\tTrajectory_save execution time \t\t\t= {:.3f}s'.format(et-st))
+        
+        
     def drone_ctrl(self):
         print('Starting Drone_Control computation...')
         st = t.time()
-        self.drone.update_ours(self.angular_velocity, self.thrust, self.forward_speed)
+        self.drone.update_ours(self.angular_velocity, self.thrust)
+        # self.drone.update_ours(self.angular_velocity, self.thrust, self.forward_speed)
         et = t.time()
         print('\tDrone_Command execution time \t\t\t= {:.3f}s'.format(et-st))
         
@@ -215,8 +232,10 @@ class HumanTech():
             # cv2.waitKey(10)
             
             
-            MDE_viz = np.hstack((self.merge_rect_left_RGB, self.merge_rect_right_RGB))
-            cv2.imshow("view",MDE_viz)
+            self.merge_rect_left_RGB = cv2.cvtColor(self.merge_rect_left_RGB, cv2.COLOR_BGR2RGB)
+            self.merge_rect_right_RGB = cv2.cvtColor(self.merge_rect_right_RGB, cv2.COLOR_BGR2RGB)
+            cv2.imshow("Left_view",self.merge_rect_left_RGB)
+            cv2.imshow("right_view",self.merge_rect_right_RGB)
             # plt.show()            
             cv2.waitKey(10)
 
@@ -318,7 +337,7 @@ if __name__ == '__main__':
     try:
         ht = HumanTech()
         
-        rate = rospy.Rate(1)
+        # rate = rospy.Rate(1)
         
         while not rospy.is_shutdown():
             '''
@@ -352,10 +371,13 @@ if __name__ == '__main__':
             '''
             # ht.evaluation()
             
-            rate.sleep()
+            # ht.trajectory()
+            
+            # rate.sleep()
             
             
     except rospy.ROSInterruptException:
         pass
     finally:
+        # ht.trajectory_save()
         print("\n\n// END //\n")

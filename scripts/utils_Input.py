@@ -2,7 +2,7 @@
 
 import rospy
 from rospy.numpy_msg import numpy_msg
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image, CompressedImage
 
 import cv2
 import numpy as np
@@ -139,12 +139,19 @@ class Realsense_Image():
         print("?")
         
         # Subscribe Node
-        rospy.Subscriber("/camera_left/color/image_raw", Image, callback_left_Color)
-        rospy.Subscriber("/camera_right/color/image_raw", Image, callback_right_Color)
+        rospy.Subscriber("/left_camera/color/image_raw/compressed", CompressedImage, self.callback_left_Color)
+        rospy.Subscriber("/right_camera/color/image_raw/compressed", CompressedImage, self.callback_right_Color)
         
+    def callback_left_Color(self, data):
+        np_arr = np.fromstring(data.data, np.uint8)
+        self.left_color = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+        # print
+    
+    def callback_right_Color(self, data):
+        np_arr = np.fromstring(data.data, np.uint8)
+        self.right_color = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
         
     def RS_RGB(self):
-        global left_color, right_color
-        return left_color, right_color
+        return self.left_color, self.right_color
     
     

@@ -88,10 +88,12 @@ class Navigation:
             Vert_fObstacleTotal += Vert_obstacleBearing * Vert_bearingExponent * distanceExponent * self.seg_center[i,4]
         
         # 단위는 degree
-        angular_velocity = Horz_fObstacleTotal * self.lambdaObstacleHorz / self.image_height / 10
+        angular_velocity = Horz_fObstacleTotal * self.lambdaObstacleHorz / self.image_height / 20
         Thrust = Vert_fObstacleTotal * self.lambdaObstacleVert / self.image_width / 100
     
-        return angular_velocity, Thrust, 0.5
+        max_velocity = 0.5
+        velocity = self.velocity_weight * max_velocity
+        return angular_velocity, Thrust, max_velocity
     
     
     def detectCorner(self):
@@ -104,6 +106,8 @@ class Navigation:
             detectCorner_pnt += detectCorner_coeff * self.seg_center[i,3] * self.seg_center[i,4]
             
         detectCorner_pnt = detectCorner_pnt / self.image_height / self.image_width * 7
+        # print(detectCorner_pnt)
+        self.velocity_weight = np.clip((detectCorner_pnt/500),0,1)
         
         if (detectCorner_pnt is not None):
             # self.lambdaObstacleHorz = 1600 * pow(detectCorner_pnt,-0.964)

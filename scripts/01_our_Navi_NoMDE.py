@@ -121,7 +121,7 @@ class HumanTech():
     def drone_ctrl(self):
         print('Starting Drone_Control computation...')
         st = t.time()
-        self.drone.update_ours(self.angular_velocity, self.thrust, self.forward_speed)
+        self.drone.update_ours(self.angular_velocity, self.thrust)
         et = t.time()
         print('\tDrone_Command execution time \t\t\t= {:.3f}s'.format(et-st))
         
@@ -165,12 +165,12 @@ if __name__ == '__main__':
             # Gazebo drone control Part
             ht.drone_ctrl()
             
-            ht.trajectory()
-            ht.drone_display()
+            # ht.trajectory()
+            # ht.drone_display()
             
             
     except rospy.ROSInterruptException:
         pass
     finally:
-        ht.trajectory_save()
+        # ht.trajectory_save()
         print("\n\n// END //\n")

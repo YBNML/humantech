@@ -50,9 +50,10 @@ class HumanTech():
         self.dronet.navigation(self.center_RGB)
         self.velocity = self.dronet.get_vel()
         self.steering = -self.dronet.get_steer()
-        
+        self.velocity = 0.5*(1-self.velocity)
         print(self.velocity, self.steering)
-            
+        self.steering = np.clip(self.steering, -0.25,+0.25)
+        
         et = t.time()
         # print(self.yaw)
         print('\tNavigation execution time \t\t\t= {:.3f}s'.format(et-st))
@@ -62,6 +63,7 @@ class HumanTech():
         st = t.time()
         self.drone.update_dronet(self.velocity, self.steering)
         et = t.time()
+        self.steering =self.steering
         print('\tDrone_Command execution time \t\t\t= {:.3f}s'.format(et-st))
         
     def drone_display(self):
