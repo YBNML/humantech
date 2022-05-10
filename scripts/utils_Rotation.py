@@ -22,10 +22,15 @@ ppy = param.get_py()
 D = [1e-08, 1e-08, 1e-08, 1e-08, 1e-08] # no distortion
 
 @njit(parallel = True, cache = True)
-def rotate_data(left_data, right_data):
+def rotate_data(left_data, right_data, degree=30):
     # if not, end of the process over.
     assert(left_data.shape == right_data.shape)
     H,W = right_data.shape
+    
+    degree = degree/2
+    radian = degree*math.pi/180
+    cos_v = math.cos(radian)
+    sin_v = math.sin(radian)
     
     for ih in prange(H):
         for iw in range(W):
@@ -52,14 +57,14 @@ def rotate_data(left_data, right_data):
             # point_y     = l_depth * uy
             point_depth = l_depth
             
-            l_depth = 0.2588190451*point_x + 0.96592582628*point_depth
+            l_depth = sin_v*point_x + cos_v*point_depth
             left_data[ih,iw] = l_depth
             
             point_x     = r_depth * ux
             # point_y     = r_depth * uy
             point_depth = r_depth
             
-            r_depth = -0.2588190451*point_x + 0.96592582628*point_depth
+            r_depth = -sin_v*point_x + cos_v*point_depth
             right_data[ih,iw] = r_depth
 
     return left_data, right_data

@@ -1,4 +1,4 @@
-# humantech
+# ISAL Lab supervised by Hyeonbeom Lee, KyungPook National University
 For_SAMSUNG-HumanTech
 
 ##  Install
