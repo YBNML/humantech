@@ -37,6 +37,8 @@ class WideStereo():
         self.Input_opt = 0      # Gazebo:0, Realsense:1
         self.MDE_opt = 0        # Adabins:0, DenseDepth:1
         
+        self.ex_angle = 30      # Extended FOV size
+        
         # Load input data
         if self.Input_opt == 0:
             self.input = Image_load()
@@ -50,7 +52,13 @@ class WideStereo():
             self.densedepth = Link_DenseDepth()
         
         # Rectification
-        self.rect = Rectification()
+        self.rect = Rectification(degree=self.ex_angle)
+        
+        # ZNCC
+        self.sgbm = SGBM()
+         
+        # SuperPixel
+        self.sp = SuperPixelSampler()
         
 
 
@@ -86,7 +94,7 @@ class WideStereo():
     def rotation(self):
         print('Starting Rotation computation...')
         st = t.time()
-        self.rect_left_MDE, self.rect_right_MDE = rotate_data(self.left_MDE, self.right_MDE)
+        self.rect_left_MDE, self.rect_right_MDE = rotate_data(self.left_MDE, self.right_MDE, degree = self.ex_angle)
         et = t.time()
         print("\tRotation execution time \t\t\t= {:.3f}s".format(et-st))
         
@@ -95,16 +103,35 @@ class WideStereo():
     def rectification(self):
         # preprocessing for rectification
         self.rotation()
-        
+
         print('Starting Rectification computation...')
         st = t.time()
         self.rect_left_RGB, self.rect_right_RGB = self.rect.remap_img(self.left_RGB, self.right_RGB)
         self.rect_left_MDE, self.rect_right_MDE = self.rect.remap_img(self.rect_left_MDE, self.rect_right_MDE)
         et = t.time()
         print("\tRectification execution time \t\t\t= {:.3f}s".format(et-st))
+       
+        
+    # ZNCC & WTA - StereoMatching
+    def stereomathcing(self):
+        print('Starting ZNCC&WTA computation...')
+        st = t.time()
+        self.left_stereo_depth, self.right_stereo_depth =  self.sgbm.stereo_depth(self.rect_left_RGB, self.rect_right_RGB, self.rect_left_MDE, self.rect_right_MDE)
+        self.crop_rect_left_RGB, self.crop_rect_right_RGB, self.crop_rect_left_MDE, self.crop_rect_right_MDE = self.sgbm.get_crop()
+        et = t.time()
+        print('\tZNCC & WTA execution time \t\t\t= {:.3f}s'.format(et-st))
         
             
-    
+    # SuperPixel
+    def superpixel(self):
+        print('Starting SuperPixel computation...')
+        st = t.time()
+        __, self.left_scaling_factor = self.sp.superPixel(self.crop_rect_left_RGB, self.left_stereo_depth, self.crop_rect_left_MDE)
+        __, self.right_scaling_factor = self.sp.superPixel(self.crop_rect_right_RGB, self.right_stereo_depth, self.crop_rect_right_MDE)
+        et = t.time()
+        print('\tSuperPixel execution time \t\t\t= {:.3f}s'.format(et-st))
+        
+        
 if __name__ == '__main__':
     try:
         WS = WideStereo()
@@ -120,6 +147,12 @@ if __name__ == '__main__':
             WS.rectification()
             
             
+            '''
+            "Depth Scaling Part"
+            '''
+            WS.stereomathcing()
+            WS.superpixel()
+            # WS.scaling()
             
     except rospy.ROSInterruptException:
         pass
