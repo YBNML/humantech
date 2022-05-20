@@ -23,6 +23,8 @@ from utils_SuperPixel import SuperPixelSampler
 from utils_Display import DISPLAY
 from utils_Drone import Drone_CTRL
 
+from utils_LocalPath import Local_Path
+
 
 class HumanTech():
     # class declaration
@@ -42,6 +44,7 @@ class HumanTech():
         self.previous_yaw = 0
         
         self.navi = Navigation()
+        self.local_p = Local_Path()
 
 
     # Input image(RGB & GT)
@@ -98,20 +101,12 @@ class HumanTech():
     def navigation(self):
         print('Starting Navigation computation...')
         st = t.time()
-        self.left_angular_velocity, self.left_thrust, self.left_forward_speed = self.navi.avoidObstacle2(self.left_seg_center)
-        self.right_angular_velocity, self.right_thrust,  self.right_forward_speed = self.navi.avoidObstacle2(self.right_seg_center)
+        # np.save("left_data.npy", self.left_seg_center)
+        # np.save("right_data.npy", self.right_seg_center)
         
-        self.angular_velocity = self.left_angular_velocity + self.right_angular_velocity
-        self.thrust = self.left_thrust + self.right_thrust
+        data = np.vstack((self.left_seg_center,self.right_seg_center))
+        self.Horz_total, self.Vert_total, self.collision_prob = self.local_p.navigation(data)
         
-        if self.left_forward_speed >= self.right_forward_speed:
-            self.forward_speed = self.right_forward_speed
-        if self.left_forward_speed < self.right_forward_speed:
-            self.forward_speed = self.left_forward_speed
-        
-        if math.isnan(self.angular_velocity) == True:
-            self.angular_velocity=0
-            self.thrust = 0
         et = t.time()
         # print(self.yaw)
         print('\tNavigation execution time \t\t\t= {:.3f}s'.format(et-st))
@@ -121,7 +116,7 @@ class HumanTech():
     def drone_ctrl(self):
         print('Starting Drone_Control computation...')
         st = t.time()
-        self.drone.update_ours(self.angular_velocity, self.thrust)
+        self.drone.update_ours(self.Horz_total, self.Vert_total, self.collision_prob)
         et = t.time()
         print('\tDrone_Command execution time \t\t\t= {:.3f}s'.format(et-st))
         
@@ -147,7 +142,7 @@ class HumanTech():
         
         cv2.imshow('Navigation',base_rgb)
         cv2.waitKey(1)
-        # print()
+        
         
     
 if __name__ == '__main__':
@@ -166,7 +161,7 @@ if __name__ == '__main__':
             ht.drone_ctrl()
             
             # ht.trajectory()
-            # ht.drone_display()
+            ht.drone_display()
             
             
     except rospy.ROSInterruptException:

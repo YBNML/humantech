@@ -118,4 +118,9 @@ class Navigation:
             # self.obstacleDistanceGainHorz = 0.0368 * np.log(detectCorner_pnt) - 0.125
             self.obstacleDistanceGainHorz = np.clip(self.obstacleDistanceGainHorz,0,10)
         
-        
+if __name__ == "__main__":
+    print("test")
+    Ld=np.load("left_data.npy")
+    Rd=np.load("right_data.npy")
+    print(Rd)
+    # print(Rd.shape)

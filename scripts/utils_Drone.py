@@ -59,7 +59,7 @@ class Drone_CTRL():
 
             self.velocities.linear.x = self.velocity*math.cos(self.current_yaw)
             self.velocities.linear.y = self.velocity*math.sin(self.current_yaw)
-            self.velocities.linear.z = 0
+            self.velocities.linear.z = self.desired_thrust
             self.velocities.angular.z = self.desired_yaw
             
 
@@ -70,13 +70,21 @@ class Drone_CTRL():
             self.msg.points.clear()
         
         
-    def update_ours(self, yaw, thrust):
+    def update_ours(self, yaw, thrust, collision_prob):
         yaw = 1 * yaw * math.pi / 180      # degree to radian
         self.desired_yaw = yaw
         
-        self.desired_thrust = thrust
         
-        print("\t", self.desired_yaw, self.desired_thrust)
+        self.desired_thrust = thrust * pow((1-collision_prob),2)
+        self.desired_thrust = -thrust
+        if(collision_prob > 0.7):  self.desired_thrust = 0
+        self.desired_thrust = 0
+        
+        self.velocity = 1 * pow((1-collision_prob),2)
+        if(collision_prob > 0.7):  self.velocity = 0
+        print(self.velocity)
+        
+        print("\t", self.desired_yaw, self.desired_thrust, collision_prob)
         
         self.pub_flag = True
         
